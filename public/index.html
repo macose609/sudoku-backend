@@ -839,3 +839,402 @@
         // Socket events
         socket.on('connect', () => {
             console.log('Connected to server');
+            myPlayerId = socket.id;
+            showToast('تم الاتصال بالسيرفر بنجاح', 'success');
+        });
+
+        socket.on('lockAssigned', (data) => {
+            playerLock = data.lock;
+            document.getElementById('displayLock').textContent = data.lock;
+            showScreen('lockScreen');
+            showToast('تم إرسال الرمز السري لك', 'success');
+        });
+
+        socket.on('lockError', (msg) => {
+            showToast(msg, 'error');
+        });
+
+        socket.on('gameState', (state) => {
+            updateSlotsUI(state);
+            if (mySlot) {
+                updateGameUI(state);
+            }
+        });
+
+        socket.on('slotAssigned', (data) => {
+            mySlot = data.slot;
+            showGame();
+            generateBoard();
+            startTimer();
+            showToast('تم الانضمام للعبة بنجاح! 🎮', 'success');
+        });
+
+        socket.on('slotError', (msg) => {
+            showToast(msg, 'error');
+        });
+
+        socket.on('resetGame', () => {
+            localData.score = 0;
+            localData.completed = 0;
+            localData.finished = false;
+            generateBoard();
+            startTimer();
+            showToast('تم إعادة تشغيل اللعبة', 'info');
+        });
+
+        socket.on('playerFinished', (data) => {
+            if (data.slot !== mySlot) {
+                showToast(`${playerEmojis[data.slot-1]} ${data.playerName} أنهى اللعبة!`, 'success');
+            }
+        });
+
+        socket.on('kicked', (data) => {
+            showToast(data.message || 'تم طردك من قبل المسؤول', 'error');
+            setTimeout(() => location.reload(), 2000);
+        });
+
+        // Step 1: Submit Name
+        function submitName() {
+            const name = document.getElementById('playerName').value.trim();
+            
+            if (!name || name.length < 2) {
+                showToast('الرجاء إدخال اسم صحيح (حرفين على الأقل)', 'error');
+                return;
+            }
+
+            playerName = name;
+            document.getElementById('displayName').textContent = name;
+
+            socket.emit('requestLock', { name: playerName });
+            showScreen('waitingScreen');
+            showToast('جاري إرسال الطلب...', 'info');
+        }
+
+        // Step 2: Submit Lock
+        function submitLock() {
+            const lockInput = document.getElementById('lockInput').value.trim();
+            
+            if (lockInput !== playerLock) {
+                showToast('الرمز غير صحيح! حاول مرة أخرى', 'error');
+                document.getElementById('lockInput').value = '';
+                return;
+            }
+
+            socket.emit('lockVerified', { name: playerName, lock: playerLock });
+            showScreen('slotScreen');
+            showToast('تم التحقق من الرمز بنجاح', 'success');
+        }
+
+        // Step 3: Join Game
+        function joinGame() {
+            if (selectedSlot) {
+                socket.emit('requestSlot', { 
+                    slot: selectedSlot, 
+                    name: playerName,
+                    lock: playerLock 
+                });
+            }
+        }
+
+        // UI Functions
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function updateSlotsUI(state) {
+            const container = document.getElementById('slotsContainer');
+            container.innerHTML = '';
+            document.getElementById('onlineCount').textContent = state.onlineCount;
+
+            const takenSlots = Object.values(state.players).map(p => p.slot);
+
+            for (let i = 1; i <= 4; i++) {
+                const player = Object.values(state.players).find(p => p.slot === i);
+                const div = document.createElement('div');
+                const isTaken = takenSlots.includes(i);
+                
+                div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="slot-emoji">${playerEmojis[i-1]}</div>
+                    <div class="slot-status" style="font-size:18px; font-weight:bold; margin:8px 0;">${player ? player.name : playerNames[i-1]}</div>
+                    <div class="slot-name" style="font-size:16px;">${isTaken ? '🔒 محجوز' : '✅ متاح'}</div>
+                `;
+
+                if (!isTaken) {
+                    div.onclick = () => {
+                        selectedSlot = i;
+                        updateSlotsUI(state);
+                        document.getElementById('joinBtn').disabled = false;
+                    };
+                }
+
+                container.appendChild(div);
+            }
+        }
+
+        function updateGameUI(state) {
+            const container = document.getElementById('gridsContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= 4; i++) {
+                const player = Object.values(state.players).find(p => p.slot === i);
+                const section = document.createElement('div');
+
+                if (player) {
+                    const isMe = i === mySlot;
+                    section.className = `player-section ${isMe ? 'me' : ''}`;
+                    section.innerHTML = `
+                        <div class="player-header header${i}">
+                            <div>
+                                ${playerEmojis[i-1]} ${player.name}
+                                ${isMe ? '<span style="background:rgba(255,215,0,0.4); padding:4px 12px; border-radius:12px; font-size:12px; margin-right:8px;">أنت</span>' : ''}
+                            </div>
+                            <div>⭐ ${player.score} نقطة</div>
+                        </div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" style="width: ${Math.round(player.completed/81*100)}%"></div>
+                        </div>
+                        <div style="text-align:center; color:#666; font-size:14px; margin:8px 0;">
+                            ${player.completed}/81 خلية (${Math.round(player.completed/81*100)}%)
+                        </div>
+                        <div class="grid" id="grid${i}"></div>
+                        ${isMe ? `
+                        <div class="number-pad">
+                            ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="num-btn" onclick="placeNum(${n})">${n}</button>`).join('')}
+                            <button class="num-btn" onclick="clearCell()">❌</button>
+                        </div>
+                        ` : ''}
+                    `;
+                } else {
+                    section.className = 'player-section empty';
+                    section.innerHTML = `
+                        <div style="text-align:center; color:#999;">
+                            <div style="font-size:64px; opacity:0.5; margin-bottom:15px;">${playerEmojis[i-1]}</div>
+                            <div style="font-size:20px; font-weight:bold;">في انتظار ${playerNames[i-1]}</div>
+                        </div>
+                    `;
+                }
+
+                container.appendChild(section);
+            }
+
+            if (mySlot) renderGrid();
+        }
+
+        function showGame() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerName}`;
+        }
+
+        function leaveGame() {
+            if (confirm('هل تريد مغادرة اللعبة؟')) {
+                showToast('جاري المغادرة...', 'info');
+                setTimeout(() => location.reload(), 1000);
+            }
+        }
+
+        // Sudoku Logic
+        function isValid(board, row, col, num) {
+            for (let x = 0; x < 9; x++) {
+                if (board[row][x] === num || board[x][col] === num) return false;
+            }
+            let sr = row - row % 3, sc = col - col % 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i+sr][j+sc] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function solve(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] === 0) {
+                        for (let n = 1; n <= 9; n++) {
+                            if (isValid(board, r, c, n)) {
+                                board[r][c] = n;
+                                if (solve(board)) return true;
+                                board[r][c] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function generateBoard() {
+            const board = Array(9).fill(null).map(() => Array(9).fill(0));
+            
+            for (let i = 0; i < 15; i++) {
+                let num = (i % 9) + 1;
+                let tries = 0;
+                while (tries < 100) {
+                    let r = Math.floor(Math.random() * 9);
+                    let c = Math.floor(Math.random() * 9);
+                    if (board[r][c] === 0 && isValid(board, r, c, num)) {
+                        board[r][c] = num;
+                        break;
+                    }
+                    tries++;
+                }
+            }
+
+            solve(board);
+            localData.solution = board.map(row => [...row]);
+            
+            let removed = 0;
+            while (removed < 40) {
+                let r = Math.floor(Math.random() * 9);
+                let c = Math.floor(Math.random() * 9);
+                if (board[r][c] !== 0) {
+                    board[r][c] = 0;
+                    removed++;
+                }
+            }
+            
+            localData.board = board;
+            localData.score = 0;
+            localData.completed = 0;
+            localData.finished = false;
+
+            socket.emit('sendBoard', {
+                board: localData.board,
+                solution: localData.solution
+            });
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById(`grid${mySlot}`);
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = i;
+                    cell.dataset.c = j;
+
+                    if (localData.board[i][j] !== 0) {
+                        cell.textContent = localData.board[i][j];
+                        if (localData.board[i][j] === localData.solution[i][j]) {
+                            cell.classList.add('fixed');
+                        }
+                    }
+
+                    cell.onclick = () => selectCell(i, j);
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function selectCell(r, c) {
+            const grid = document.getElementById(`grid${mySlot}`);
+            if (!grid) return;
+            
+            grid.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
+
+            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if (!cell.classList.contains('fixed')) {
+                cell.classList.add('selected');
+                localData.selected = {r, c};
+            }
+        }
+
+        function placeNum(num) {
+            if (!localData.selected || localData.finished) return;
+
+            const {r, c} = localData.selected;
+            localData.board[r][c] = num;
+
+            const grid = document.getElementById(`grid${mySlot}`);
+            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+
+            if (num === localData.solution[r][c]) {
+                localData.score += 10;
+                cell.classList.add('correct');
+                showToast('صحيح! +10 نقاط ✅', 'success');
+                setTimeout(() => cell.classList.remove('correct'), 600);
+            } else {
+                localData.score = Math.max(0, localData.score - 2);
+                cell.classList.add('wrong');
+                showToast('خطأ! -2 نقطة ❌', 'error');
+                setTimeout(() => cell.classList.remove('wrong'), 600);
+            }
+
+            renderGrid();
+            selectCell(r, c);
+            updateProgress();
+        }
+
+        function clearCell() {
+            if (!localData.selected || localData.finished) return;
+            
+            const {r, c} = localData.selected;
+            if (localData.solution[r][c] === localData.board[r][c]) return;
+            
+            localData.board[r][c] = 0;
+            renderGrid();
+            selectCell(r, c);
+            showToast('تم مسح الخلية', 'info');
+        }
+
+        function updateProgress() {
+            let completed = 0;
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
+                        completed++;
+                    }
+                }
+            }
+
+            localData.completed = completed;
+
+            if (completed === 81 && !localData.finished) {
+                localData.finished = true;
+                createConfetti();
+                showToast('🎉 مبروك! أنهيت اللعبة! 🏆', 'success');
+                
+                setTimeout(() => {
+                    alert('🎉🎉🎉\n\nمبروك! أنهيت اللعبة!\n\nنقاطك: ' + localData.score);
+                }, 500);
+            }
+
+            socket.emit('updateProgress', {
+                score: localData.score,
+                completed: localData.completed,
+                finished: localData.finished
+            });
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        // Enter key support
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('playerName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitName();
+            });
+            document.getElementById('lockInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitLock();
+            });
+        });
+    </script>
+</body>
+</html>
