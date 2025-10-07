@@ -17,7 +17,6 @@
             min-height: 100vh;
         }
 
-        /* Login Screen */
         .login-screen {
             position: fixed;
             top: 0;
@@ -110,7 +109,6 @@
             margin-top: 15px;
         }
 
-        /* Admin Dashboard */
         .admin-panel {
             display: none;
         }
@@ -269,6 +267,22 @@
             color: #1565c0;
         }
 
+        .status-waiting {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .lock-code {
+            background: #e8f5e9;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b5e20;
+            display: inline-block;
+        }
+
         .action-btn {
             padding: 6px 12px;
             border: none;
@@ -276,6 +290,7 @@
             cursor: pointer;
             margin: 0 3px;
             transition: all 0.3s;
+            font-size: 13px;
         }
 
         .kick-btn {
@@ -321,11 +336,14 @@
             .players-table {
                 font-size: 14px;
             }
+
+            .lock-code {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
             <h1>🔐 لوحة التحكم</h1>
@@ -347,7 +365,6 @@
         </div>
     </div>
 
-    <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">
         <div class="navbar">
             <h1>🎮 لوحة تحكم سودوكو</h1>
@@ -355,7 +372,6 @@
         </div>
 
         <div class="container">
-            <!-- Statistics Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">👥</div>
@@ -370,15 +386,40 @@
                 </div>
 
                 <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-value" id="pendingPlayers">0</div>
+                    <div class="stat-label">في الانتظار</div>
+                </div>
+
+                <div class="stat-card">
                     <div class="stat-icon">🏆</div>
                     <div class="stat-value" id="gamesPlayed">0</div>
                     <div class="stat-label">مباريات منتهية</div>
                 </div>
+            </div>
 
-                <div class="stat-card">
-                    <div class="stat-icon">⏱️</div>
-                    <div class="stat-value" id="avgTime">00:00</div>
-                    <div class="stat-label">متوسط الوقت</div>
+            <!-- Pending Players Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>⏳ لاعبين في الانتظار</h2>
+                    <button class="refresh-btn" onclick="refreshData()">🔄 تحديث</button>
+                </div>
+
+                <div id="pendingContent">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th>الوقت</th>
+                                <th>الرمز السري</th>
+                                <th>الاسم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTableBody">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين في الانتظار</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -386,7 +427,6 @@
             <div class="section">
                 <div class="section-header">
                     <h2>👥 اللاعبين النشطين</h2>
-                    <button class="refresh-btn" onclick="refreshData()">🔄 تحديث</button>
                 </div>
 
                 <div id="playersContent">
@@ -396,12 +436,16 @@
                                 <th>إجراءات</th>
                                 <th>الإكمال</th>
                                 <th>النقاط</th>
-                                <th>الحالة</th>
+                                <th>الرمز</th>
                                 <th>الموقع</th>
-                                <th>معرف اللاعب</th>
+                                <th>الاسم</th>
                             </tr>
                         </thead>
-                        <tbody id="playersTableBody"></tbody>
+                        <tbody id="playersTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين نشطين</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -450,11 +494,10 @@
         let gameStats = {
             totalPlayers: 0,
             activePlayers: 0,
-            gamesPlayed: 0,
-            avgTime: 0
+            pendingCount: 0,
+            gamesPlayed: 0
         };
 
-        // Login Function
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -490,22 +533,33 @@
             updateDashboard(state);
         });
 
+        socket.on('pendingPlayers', (pending) => {
+            if (!isAdmin) return;
+            updatePendingPlayers(pending);
+        });
+
+        socket.on('playerRequest', (data) => {
+            if (!isAdmin) return;
+            addLog(`🔔 طلب جديد من: ${data.name} - الرمز: ${data.lock}`);
+            refreshData();
+        });
+
         socket.on('playerJoined', (data) => {
             if (!isAdmin) return;
-            addLog(`🟢 لاعب جديد انضم: ${data.playerId} - الموقع ${data.slot}`);
+            addLog(`🟢 ${data.name} انضم - الموقع ${data.slot}`);
             refreshData();
         });
 
         socket.on('playerLeft', (data) => {
             if (!isAdmin) return;
-            addLog(`🔴 لاعب غادر: ${data.playerId}`);
+            addLog(`🔴 ${data.name || 'لاعب'} غادر`);
             refreshData();
         });
 
         socket.on('gameFinished', (data) => {
             if (!isAdmin) return;
             gameStats.gamesPlayed++;
-            addLog(`🏆 لاعب أنهى اللعبة: ${data.playerId} - الوقت: ${data.time}`);
+            addLog(`🏆 ${data.playerName} أنهى اللعبة - النقاط: ${data.score}`);
             refreshData();
         });
 
@@ -546,30 +600,61 @@
                         ${completion}%
                     </td>
                     <td><strong>${player.score}</strong></td>
-                    <td>
-                        <span class="status-badge ${player.finished ? 'status-active' : 'status-playing'}">
-                            ${player.finished ? 'منتهي' : 'يلعب'}
-                        </span>
-                    </td>
+                    <td><span class="lock-code" style="font-size: 14px; padding: 4px 8px;">****</span></td>
                     <td>${playerEmojis[player.slot - 1]} موقع ${player.slot}</td>
-                    <td style="font-family: monospace; font-size: 12px;">${player.id.substring(0, 8)}...</td>
+                    <td><strong>${player.name}</strong></td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        // Update Pending Players
+        function updatePendingPlayers(pending) {
+            gameStats.pendingCount = pending.length;
+            document.getElementById('pendingPlayers').textContent = pending.length;
+
+            const tbody = document.getElementById('pendingTableBody');
+            tbody.innerHTML = '';
+
+            if (pending.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين في الانتظار</td></tr>';
+                return;
+            }
+
+            pending.forEach(player => {
+                const tr = document.createElement('tr');
+                const timeAgo = formatTimeAgo(player.timestamp);
+                
+                tr.innerHTML = `
+                    <td style="color: #999; font-size: 12px;">${timeAgo}</td>
+                    <td><span class="lock-code">${player.lock}</span></td>
+                    <td><strong>${player.name}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function formatTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return `منذ ${seconds} ثانية`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `منذ ${minutes} دقيقة`;
+            const hours = Math.floor(minutes / 60);
+            return `منذ ${hours} ساعة`;
         }
 
         // Admin Actions
         function kickPlayer(playerId) {
             if (confirm('هل تريد طرد هذا اللاعب؟')) {
                 socket.emit('adminKickPlayer', playerId);
-                addLog(`🚫 تم طرد اللاعب: ${playerId}`);
+                addLog(`🚫 تم طرد لاعب`);
             }
         }
 
         function resetPlayer(playerId) {
             if (confirm('هل تريد إعادة تعيين لعبة هذا اللاعب؟')) {
                 socket.emit('adminResetPlayer', playerId);
-                addLog(`🔄 تم إعادة تعيين لعبة اللاعب: ${playerId}`);
+                addLog(`🔄 تم إعادة تعيين لعبة لاعب`);
             }
         }
 
