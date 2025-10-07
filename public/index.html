@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سودوكو - 4 لاعبين مباشر</title>
+    <title>سودوكو - 4 لاعبين مباشر PRO</title>
     <style>
         * {
             margin: 0;
@@ -11,11 +11,63 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 15px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
         }
 
         .screen {
@@ -24,11 +76,16 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .screen.active {
@@ -36,35 +93,73 @@
         }
 
         .form-container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 450px;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 45px;
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            max-width: 500px;
             width: 90%;
             text-align: center;
+            position: relative;
+            animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 25px;
+            z-index: -1;
+            animation: gradientRotate 3s linear infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .form-container h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            font-size: 2.8em;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .form-container p {
             color: #666;
             margin-bottom: 30px;
-            font-size: 16px;
+            font-size: 17px;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: right;
         }
 
         .input-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: #333;
             font-weight: bold;
             font-size: 16px;
@@ -72,50 +167,84 @@
 
         .input-group input {
             width: 100%;
-            padding: 15px;
+            padding: 18px;
             border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            border-radius: 15px;
             font-size: 18px;
             transition: all 0.3s;
             text-align: center;
+            background: #f8f9fa;
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 10px rgba(102,126,234,0.3);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(102,126,234,0.3);
+            background: white;
+            transform: translateY(-2px);
         }
 
         .submit-btn {
             width: 100%;
-            padding: 15px;
-            background: #667eea;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 15px;
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
             margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .submit-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .submit-btn:hover:not(:disabled) {
-            background: #5568d3;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
         }
 
         .submit-btn:disabled {
-            background: #ccc;
+            background: linear-gradient(135deg, #ccc, #999);
             cursor: not-allowed;
+            transform: none;
         }
 
         .waiting-message {
-            background: rgba(255, 235, 59, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 2px solid #ffeb3b;
+            background: linear-gradient(135deg, rgba(255,235,59,0.2), rgba(255,193,7,0.2));
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border: 2px solid rgba(245,158,11,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
 
         .waiting-message p {
@@ -127,160 +256,213 @@
         .slots-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 30px 0;
+            gap: 18px;
+            margin: 35px 0;
         }
 
         .slot-card {
             background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            padding: 20px;
-            border-radius: 15px;
+            padding: 25px;
+            border-radius: 20px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .slot-card:hover::before {
+            left: 100%;
         }
 
         .slot-card:hover:not(.taken) {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
         }
 
         .slot-card.taken {
-            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
         .slot-card.selected {
             border-color: #2196f3;
-            box-shadow: 0 0 20px rgba(33,150,243,0.6);
+            box-shadow: 0 0 30px rgba(33,150,243,0.8);
+            transform: scale(1.05);
         }
 
         .slot-emoji {
-            font-size: 48px;
-            margin-bottom: 10px;
+            font-size: 56px;
+            margin-bottom: 12px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .connection-status {
-            background: rgba(255,255,255,0.2);
-            padding: 10px;
-            border-radius: 10px;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 15px;
             color: white;
-            margin: 20px 0;
+            margin: 25px 0;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .status-dot {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            margin-left: 5px;
-            background: #4caf50;
+            margin-left: 8px;
+            background: #10b981;
             animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            box-shadow: 0 0 10px #10b981;
         }
 
         .game-screen {
             display: none;
+            position: relative;
+            z-index: 1;
         }
 
         .game-screen.active {
             display: block;
+            animation: fadeIn 0.5s;
         }
 
         h1 {
             text-align: center;
             color: white;
-            margin-bottom: 20px;
-            font-size: 2.2em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 25px;
+            font-size: 2.5em;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 3px 3px 6px rgba(0,0,0,0.3); }
+            50% { text-shadow: 0 0 20px rgba(255,255,255,0.8), 3px 3px 6px rgba(0,0,0,0.3); }
         }
 
         .game-info {
-            background: rgba(255,255,255,0.95);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 25px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
         .timer {
-            font-size: 36px;
-            color: #e91e63;
+            font-size: 48px;
+            background: linear-gradient(135deg, #e91e63, #f06292);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
         }
 
         .controls {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            background: #2196f3;
+            background: linear-gradient(135deg, #2196f3, #1976d2);
             color: white;
             transition: all 0.3s;
             font-weight: 600;
+            box-shadow: 0 4px 15px rgba(33,150,243,0.3);
         }
 
         button:hover {
-            background: #1976d2;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(33,150,243,0.4);
+        }
+
+        button:active {
+            transform: translateY(-1px);
         }
 
         .leave-btn {
-            background: #f44336;
+            background: linear-gradient(135deg, #f44336, #d32f2f);
         }
 
         .grids-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 20px;
             max-width: 1400px;
             margin: 0 auto;
         }
 
         .player-section {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .player-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
 
         .player-section.me {
-            box-shadow: 0 0 30px rgba(255,215,0,0.6);
+            box-shadow: 0 0 40px rgba(255,215,0,0.8);
             transform: scale(1.02);
+            border: 3px solid gold;
         }
 
         .player-section.empty {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, rgba(245,247,250,0.5) 0%, rgba(195,207,226,0.5) 100%);
+            backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 400px;
+            min-height: 450px;
         }
 
         .player-header {
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 18px;
             color: white;
             font-weight: bold;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .header1 { background: linear-gradient(135deg, #f44336 0%, #e91e63 100%); }
@@ -290,130 +472,217 @@
 
         .completion-bar {
             width: 100%;
-            height: 8px;
+            height: 10px;
             background: #e0e0e0;
             border-radius: 10px;
             overflow: hidden;
-            margin: 10px 0;
+            margin: 12px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .completion-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4caf50, #8bc34a);
-            transition: width 0.5s;
+            background: linear-gradient(90deg, #4caf50, #8bc34a, #4caf50);
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-size: 200% 100%;
+            animation: progressShine 2s linear infinite;
+        }
+
+        @keyframes progressShine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
             gap: 0;
-            margin: 10px auto;
+            margin: 15px auto;
             width: fit-content;
-            border: 2px solid #333;
+            border: 3px solid #333;
             background: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         .cell {
-            width: 35px;
-            height: 35px;
-            border: 1px solid #999;
+            width: 38px;
+            height: 38px;
+            border: 1px solid #bbb;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             background: white;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent, rgba(102,126,234,0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .cell:hover:not(.fixed)::before {
+            opacity: 1;
         }
 
         .cell:hover:not(.fixed) {
             background: #e3f2fd;
-            transform: scale(1.1);
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         .cell.fixed {
             background: #f5f5f5;
             cursor: default;
+            color: #333;
+            font-weight: 900;
         }
 
         .cell.selected {
             background: #bbdefb;
+            box-shadow: 0 0 15px rgba(33,150,243,0.6);
+            transform: scale(1.1);
+            z-index: 10;
         }
 
         .cell.correct {
             background: #c8e6c9;
-            animation: pulse-cell 0.5s;
+            animation: correctPulse 0.6s;
         }
 
         .cell.wrong {
             background: #ffcdd2;
-            animation: shake 0.3s;
+            animation: shake 0.4s;
         }
 
-        @keyframes pulse-cell {
+        @keyframes correctPulse {
             0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.2); box-shadow: 0 0 20px rgba(76,175,80,0.8); }
             50% { transform: scale(1.15); }
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-8px) rotate(-3deg); }
+            50% { transform: translateX(8px) rotate(3deg); }
+            75% { transform: translateX(-8px) rotate(-3deg); }
         }
 
         .number-pad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 18px;
         }
 
         .num-btn {
-            padding: 12px;
-            font-size: 18px;
-            background: #673ab7;
+            padding: 15px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #673ab7, #9c27b0);
+            box-shadow: 0 4px 15px rgba(103,58,183,0.3);
+            font-weight: bold;
         }
 
-        .error-msg {
+        .num-btn:hover {
+            box-shadow: 0 6px 20px rgba(103,58,183,0.5);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             display: none;
-            background: #f44336;
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 15px;
+            align-items: center;
+            gap: 15px;
+            z-index: 10000;
+            animation: slideInRight 0.5s;
+            max-width: 350px;
         }
 
-        .error-msg.show {
-            display: block;
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast.success { border-right: 5px solid #10b981; }
+        .toast.error { border-right: 5px solid #ef4444; }
+        .toast.info { border-right: 5px solid #3b82f6; }
+
+        .toast-icon {
+            font-size: 32px;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
         }
 
         @media (max-width: 1200px) {
             .grids-container { grid-template-columns: 1fr; }
-            .cell { width: 32px; height: 32px; font-size: 16px; }
+            .cell { width: 34px; height: 34px; font-size: 18px; }
         }
 
         @media (max-width: 768px) {
             .slots-container { grid-template-columns: 1fr; }
-            .cell { width: 28px; height: 28px; font-size: 14px; }
+            .cell { width: 30px; height: 30px; font-size: 16px; }
+            .form-container { padding: 30px 25px; }
+            h1 { font-size: 2em; }
         }
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-icon" id="toastIcon">✅</div>
+        <div id="toastMessage"></div>
+    </div>
+
     <!-- Step 1: Enter Name -->
     <div class="screen active" id="nameScreen">
         <div class="form-container">
             <h1>🎮 سودوكو</h1>
-            <p>أدخل اسمك للبدء</p>
+            <p>أدخل اسمك للبدء في اللعبة</p>
             
             <div class="input-group">
                 <label>الاسم</label>
                 <input type="text" id="playerName" placeholder="اكتب اسمك هنا..." maxlength="20" />
             </div>
 
-            <button class="submit-btn" onclick="submitName()">متابعة</button>
-
-            <div class="error-msg" id="nameError"></div>
+            <button class="submit-btn" onclick="submitName()">متابعة ←</button>
         </div>
     </div>
 
@@ -427,8 +696,8 @@
                 <p>🔐 جاري الحصول على الرمز السري...</p>
             </div>
 
-            <div style="margin: 20px 0; color: #666;">
-                <strong>اسمك:</strong> <span id="displayName" style="color: #667eea;"></span>
+            <div style="margin: 25px 0; color: #666; font-size: 18px;">
+                <strong>اسمك:</strong> <span id="displayName" style="color: #667eea; font-size: 20px;"></span>
             </div>
 
             <p style="font-size: 14px; color: #999;">
@@ -443,23 +712,21 @@
             <h1>🔐 أدخل الرمز</h1>
             <p>تم إرسال رمزك السري</p>
 
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <p style="color: #2e7d32; margin: 0; font-size: 14px;">
+            <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 25px; border-radius: 15px; margin: 25px 0; box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);">
+                <p style="color: #2e7d32; margin: 0; font-size: 15px;">
                     <strong>رمزك السري:</strong>
                 </p>
-                <p style="color: #1b5e20; font-size: 32px; font-weight: bold; margin: 10px 0; font-family: monospace;" id="displayLock">
+                <p style="color: #1b5e20; font-size: 42px; font-weight: bold; margin: 15px 0; font-family: monospace; letter-spacing: 8px;" id="displayLock">
                     ****
                 </p>
             </div>
 
             <div class="input-group">
                 <label>أدخل الرمز للدخول</label>
-                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 10px; font-size: 24px; font-family: monospace;" />
+                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 15px; font-size: 28px; font-family: monospace;" />
             </div>
 
-            <button class="submit-btn" onclick="submitLock()">دخول للعبة</button>
-
-            <div class="error-msg" id="lockError"></div>
+            <button class="submit-btn" onclick="submitLock()">دخول للعبة 🚀</button>
         </div>
     </div>
 
@@ -476,9 +743,7 @@
 
             <div class="slots-container" id="slotsContainer"></div>
 
-            <button class="submit-btn" id="joinBtn" disabled onclick="joinGame()">انضم للعبة</button>
-            
-            <div class="error-msg" id="slotError"></div>
+            <button class="submit-btn" id="joinBtn" disabled onclick="joinGame()">انضم للعبة 🎯</button>
         </div>
     </div>
 
@@ -487,7 +752,7 @@
         <h1>🎮 سودوكو - 4 لاعبين مباشر 🎮</h1>
         
         <div class="game-info">
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 25px; border-radius: 20px; display: inline-block; margin-bottom: 10px;" id="myInfo">
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 30px; border-radius: 20px; display: inline-block; margin-bottom: 15px; box-shadow: 0 5px 20px rgba(102,126,234,0.4);" id="myInfo">
                 أنت: 🔴 لاعب 1
             </div>
             <div class="timer" id="timer">00:00</div>
@@ -501,6 +766,55 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // ===== Particles Animation =====
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // ===== Toast Notification System =====
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            toast.className = 'toast show ' + type;
+            
+            if (type === 'success') icon.textContent = '✅';
+            else if (type === 'error') icon.textContent = '❌';
+            else icon.textContent = 'ℹ️';
+
+            msg.textContent = message;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ===== Confetti Effect =====
+        function createConfetti() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        // ===== Socket & Game Logic =====
         const socket = io();
         const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
         const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
@@ -525,388 +839,3 @@
         // Socket events
         socket.on('connect', () => {
             console.log('Connected to server');
-            myPlayerId = socket.id;
-        });
-
-        socket.on('lockAssigned', (data) => {
-            playerLock = data.lock;
-            document.getElementById('displayLock').textContent = data.lock;
-            showScreen('lockScreen');
-        });
-
-        socket.on('lockError', (msg) => {
-            showError('lockError', msg);
-        });
-
-        socket.on('gameState', (state) => {
-            updateSlotsUI(state);
-            if (mySlot) {
-                updateGameUI(state);
-            }
-        });
-
-        socket.on('slotAssigned', (data) => {
-            mySlot = data.slot;
-            showGame();
-            generateBoard();
-            startTimer();
-        });
-
-        socket.on('slotError', (msg) => {
-            showError('slotError', msg);
-        });
-
-        socket.on('resetGame', () => {
-            localData.score = 0;
-            localData.completed = 0;
-            localData.finished = false;
-            generateBoard();
-            startTimer();
-        });
-
-        socket.on('playerFinished', (data) => {
-            if (data.slot !== mySlot) {
-                alert(`${playerEmojis[data.slot-1]} ${data.playerName} أنهى اللعبة!`);
-            }
-        });
-
-        socket.on('kicked', (data) => {
-            alert(data.message || 'تم طردك من قبل المسؤول');
-            location.reload();
-        });
-
-        // Step 1: Submit Name
-        function submitName() {
-            const name = document.getElementById('playerName').value.trim();
-            
-            if (!name || name.length < 2) {
-                showError('nameError', 'الرجاء إدخال اسم صحيح (حرفين على الأقل)');
-                return;
-            }
-
-            playerName = name;
-            document.getElementById('displayName').textContent = name;
-
-            // Request lock from server
-            socket.emit('requestLock', { name: playerName });
-            showScreen('waitingScreen');
-        }
-
-        // Step 2: Submit Lock
-        function submitLock() {
-            const lockInput = document.getElementById('lockInput').value.trim();
-            
-            if (lockInput !== playerLock) {
-                showError('lockError', 'الرمز غير صحيح! حاول مرة أخرى');
-                return;
-            }
-
-            // Lock verified, show slot selection
-            socket.emit('lockVerified', { name: playerName, lock: playerLock });
-            showScreen('slotScreen');
-        }
-
-        // Step 3: Join Game
-        function joinGame() {
-            if (selectedSlot) {
-                socket.emit('requestSlot', { 
-                    slot: selectedSlot, 
-                    name: playerName,
-                    lock: playerLock 
-                });
-            }
-        }
-
-        // UI Functions
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        function showError(elementId, message) {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 3000);
-        }
-
-        function updateSlotsUI(state) {
-            const container = document.getElementById('slotsContainer');
-            container.innerHTML = '';
-            document.getElementById('onlineCount').textContent = state.onlineCount;
-
-            const takenSlots = Object.values(state.players).map(p => p.slot);
-
-            for (let i = 1; i <= 4; i++) {
-                const player = Object.values(state.players).find(p => p.slot === i);
-                const div = document.createElement('div');
-                const isTaken = takenSlots.includes(i);
-                
-                div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
-                div.innerHTML = `
-                    <div class="slot-emoji">${playerEmojis[i-1]}</div>
-                    <div class="slot-status">${player ? player.name : playerNames[i-1]}</div>
-                    <div class="slot-name">${isTaken ? '🔒 محجوز' : 'متاح'}</div>
-                `;
-
-                if (!isTaken) {
-                    div.onclick = () => {
-                        selectedSlot = i;
-                        updateSlotsUI(state);
-                        document.getElementById('joinBtn').disabled = false;
-                    };
-                }
-
-                container.appendChild(div);
-            }
-        }
-
-        function updateGameUI(state) {
-            const container = document.getElementById('gridsContainer');
-            container.innerHTML = '';
-
-            for (let i = 1; i <= 4; i++) {
-                const player = Object.values(state.players).find(p => p.slot === i);
-                const section = document.createElement('div');
-
-                if (player) {
-                    const isMe = i === mySlot;
-                    section.className = `player-section ${isMe ? 'me' : ''}`;
-                    section.innerHTML = `
-                        <div class="player-header header${i}">
-                            <div>
-                                ${playerEmojis[i-1]} ${player.name}
-                                ${isMe ? '<span style="background:rgba(255,215,0,0.3); padding:2px 8px; border-radius:10px; font-size:11px; margin-right:5px;">أنت</span>' : ''}
-                            </div>
-                            <div>${player.score} نقطة</div>
-                        </div>
-                        <div class="completion-bar">
-                            <div class="completion-fill" style="width: ${Math.round(player.completed/81*100)}%"></div>
-                        </div>
-                        <div class="grid" id="grid${i}"></div>
-                        ${isMe ? `
-                        <div class="number-pad">
-                            ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="num-btn" onclick="placeNum(${n})">${n}</button>`).join('')}
-                            <button class="num-btn" onclick="clearCell()">❌</button>
-                        </div>
-                        ` : ''}
-                    `;
-                } else {
-                    section.className = 'player-section empty';
-                    section.innerHTML = `
-                        <div style="text-align:center; color:#999;">
-                            <div style="font-size:48px; opacity:0.5;">${playerEmojis[i-1]}</div>
-                            <div style="font-size:18px; font-weight:bold;">في انتظار ${playerNames[i-1]}</div>
-                        </div>
-                    `;
-                }
-
-                container.appendChild(section);
-            }
-
-            if (mySlot) renderGrid();
-        }
-
-        function showGame() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('gameScreen').classList.add('active');
-            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerName}`;
-        }
-
-        function leaveGame() {
-            if (confirm('هل تريد مغادرة اللعبة؟')) {
-                location.reload();
-            }
-        }
-
-        // Sudoku Logic
-        function isValid(board, row, col, num) {
-            for (let x = 0; x < 9; x++) {
-                if (board[row][x] === num || board[x][col] === num) return false;
-            }
-            let sr = row - row % 3, sc = col - col % 3;
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (board[i+sr][j+sc] === num) return false;
-                }
-            }
-            return true;
-        }
-
-        function solve(board) {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (board[r][c] === 0) {
-                        for (let n = 1; n <= 9; n++) {
-                            if (isValid(board, r, c, n)) {
-                                board[r][c] = n;
-                                if (solve(board)) return true;
-                                board[r][c] = 0;
-                            }
-                        }
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        function generateBoard() {
-            const board = Array(9).fill(null).map(() => Array(9).fill(0));
-            
-            for (let i = 0; i < 15; i++) {
-                let num = (i % 9) + 1;
-                let tries = 0;
-                while (tries < 100) {
-                    let r = Math.floor(Math.random() * 9);
-                    let c = Math.floor(Math.random() * 9);
-                    if (board[r][c] === 0 && isValid(board, r, c, num)) {
-                        board[r][c] = num;
-                        break;
-                    }
-                    tries++;
-                }
-            }
-
-            solve(board);
-            localData.solution = board.map(row => [...row]);
-            
-            let removed = 0;
-            while (removed < 40) {
-                let r = Math.floor(Math.random() * 9);
-                let c = Math.floor(Math.random() * 9);
-                if (board[r][c] !== 0) {
-                    board[r][c] = 0;
-                    removed++;
-                }
-            }
-            
-            localData.board = board;
-            localData.score = 0;
-            localData.completed = 0;
-            localData.finished = false;
-
-            socket.emit('sendBoard', {
-                board: localData.board,
-                solution: localData.solution
-            });
-
-            renderGrid();
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById(`grid${mySlot}`);
-            if (!grid) return;
-
-            grid.innerHTML = '';
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.dataset.r = i;
-                    cell.dataset.c = j;
-
-                    if (localData.board[i][j] !== 0) {
-                        cell.textContent = localData.board[i][j];
-                        if (localData.board[i][j] === localData.solution[i][j]) {
-                            cell.classList.add('fixed');
-                        }
-                    }
-
-                    cell.onclick = () => selectCell(i, j);
-                    grid.appendChild(cell);
-                }
-            }
-        }
-
-        function selectCell(r, c) {
-            const grid = document.getElementById(`grid${mySlot}`);
-            grid.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
-
-            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-            if (!cell.classList.contains('fixed')) {
-                cell.classList.add('selected');
-                localData.selected = {r, c};
-            }
-        }
-
-        function placeNum(num) {
-            if (!localData.selected || localData.finished) return;
-
-            const {r, c} = localData.selected;
-            localData.board[r][c] = num;
-
-            const grid = document.getElementById(`grid${mySlot}`);
-            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-
-            if (num === localData.solution[r][c]) {
-                localData.score += 10;
-                cell.classList.add('correct');
-                setTimeout(() => cell.classList.remove('correct'), 500);
-            } else {
-                localData.score = Math.max(0, localData.score - 2);
-                cell.classList.add('wrong');
-                setTimeout(() => cell.classList.remove('wrong'), 500);
-            }
-
-            renderGrid();
-            selectCell(r, c);
-            updateProgress();
-        }
-
-        function clearCell() {
-            if (!localData.selected || localData.finished) return;
-            
-            const {r, c} = localData.selected;
-            localData.board[r][c] = 0;
-            renderGrid();
-            selectCell(r, c);
-        }
-
-        function updateProgress() {
-            let completed = 0;
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
-                        completed++;
-                    }
-                }
-            }
-
-            localData.completed = completed;
-
-            if (completed === 81 && !localData.finished) {
-                localData.finished = true;
-                alert('🎉 مبروك! أنهيت اللعبة!');
-            }
-
-            socket.emit('updateProgress', {
-                score: localData.score,
-                completed: localData.completed,
-                finished: localData.finished
-            });
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                const s = (elapsed % 60).toString().padStart(2, '0');
-                document.getElementById('timer').textContent = `${m}:${s}`;
-            }, 1000);
-        }
-
-        // Enter key support
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('playerName').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitName();
-            });
-            document.getElementById('lockInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitLock();
-            });
-        });
-    </script>
-</body>
-</html>
