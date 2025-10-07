@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سودوكو - 4 لاعبين مباشر</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .login-container h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .slot-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .slot-card:hover:not(.taken) {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .slot-card.taken {
+            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .slot-card.selected {
+            border-color: #2196f3;
+            box-shadow: 0 0 20px rgba(33,150,243,0.6);
+        }
+
+        .slot-emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .join-button {
+            background: #667eea;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .join-button:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .join-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .game-info {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 36px;
+            color: #e91e63;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #2196f3;
+            color: white;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+        }
+
+        .leave-btn {
+            background: #f44336;
+        }
+
+        .grids-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .player-section {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .player-section.me {
+            box-shadow: 0 0 30px rgba(255,215,0,0.6);
+            transform: scale(1.02);
+        }
+
+        .player-section.empty {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .player-header {
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header1 { background: linear-gradient(135deg, #f44336 0%, #e91e63 100%); }
+        .header2 { background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%); }
+        .header3 { background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%); color: #333; }
+        .header4 { background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); }
+
+        .completion-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .completion-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.5s;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 0;
+            margin: 10px auto;
+            width: fit-content;
+            border: 2px solid #333;
+            background: #333;
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            border: 1px solid #999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cell:hover:not(.fixed) {
+            background: #e3f2fd;
+            transform: scale(1.1);
+        }
+
+        .cell.fixed {
+            background: #f5f5f5;
+            cursor: default;
+        }
+
+        .cell.selected {
+            background: #bbdefb;
+        }
+
+        .cell.correct {
+            background: #c8e6c9;
+            animation: pulse-cell 0.5s;
+        }
+
+        .cell.wrong {
+            background: #ffcdd2;
+            animation: shake 0.3s;
+        }
+
+        @keyframes pulse-cell {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .num-btn {
+            padding: 12px;
+            font-size: 18px;
+            background: #673ab7;
+        }
+
+        @media (max-width: 1200px) {
+            .grids-container { grid-template-columns: 1fr; }
+            .cell { width: 32px; height: 32px; font-size: 16px; }
+        }
+
+        @media (max-width: 768px) {
+            .slots-container { grid-template-columns: 1fr; }
+            .cell { width: 28px; height: 28px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <h1>🎮 سودوكو - 4 لاعبين</h1>
+            <p>اختر مكانك في اللعبة!</p>
+
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                متصل بالسيرفر | <span id="onlineCount">0</span>/4 لاعبين
+            </div>
+
+            <div class="slots-container" id="slotsContainer"></div>
+
+            <button class="join-button" id="joinBtn" disabled>انضم للعبة</button>
+            
+            <div id="errorMsg" style="display:none; background:#f44336; color:white; padding:10px; border-radius:10px; margin-top:15px;"></div>
+        </div>
+    </div>
+
+    <div class="game-screen" id="gameScreen">
+        <h1>🎮 سودوكو - 4 لاعبين مباشر 🎮</h1>
+        
+        <div class="game-info">
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 25px; border-radius: 20px; display: inline-block; margin-bottom: 10px;" id="myInfo">
+                أنت: 🔴 لاعب 1
+            </div>
+            <div class="timer" id="timer">00:00</div>
+            <div class="controls">
+                <button onclick="requestNewGame()">🎮 لعبة جديدة</button>
+                <button onclick="leaveGame()" class="leave-btn">🚪 غادر</button>
+            </div>
+        </div>
+
+        <div class="grids-container" id="gridsContainer"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
+        const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
+
+        let mySlot = null;
+        let myPlayerId = null;
+        let selectedSlot = null;
+        let startTime = null;
+        let timerInterval = null;
+
+        const localData = {
+            board: [],
+            solution: [],
+            selected: null,
+            score: 0,
+            completed: 0,
+            finished: false
+        };
+
+        // Socket events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            myPlayerId = socket.id;
+        });
+
+        socket.on('gameState', (state) => {
+            updateSlotsUI(state);
+            if (mySlot) {
+                updateGameUI(state);
+            }
+        });
+
+        socket.on('slotAssigned', (data) => {
+            mySlot = data.slot;
+            showGame();
+            generateBoard();
+            startTimer();
+        });
+
+        socket.on('slotError', (msg) => {
+            showError(msg);
+        });
+
+        socket.on('resetGame', () => {
+            localData.score = 0;
+            localData.completed = 0;
+            localData.finished = false;
+            generateBoard();
+            startTimer();
+        });
+
+        socket.on('playerFinished', (data) => {
+            if (data.slot !== mySlot) {
+                showNotification(`${playerEmojis[data.slot-1]} ${playerNames[data.slot-1]} أنهى اللعبة!`);
+            }
+        });
+
+        // UI Functions
+        function updateSlotsUI(state) {
+            const container = document.getElementById('slotsContainer');
+            container.innerHTML = '';
+            document.getElementById('onlineCount').textContent = state.onlineCount;
+
+            const takenSlots = Object.values(state.players).map(p => p.slot);
+
+            for (let i = 1; i <= 4; i++) {
+                const div = document.createElement('div');
+                const isTaken = takenSlots.includes(i);
+                
+                div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="slot-emoji">${playerEmojis[i-1]}</div>
+                    <div class="slot-status">${playerNames[i-1]}</div>
+                    <div class="slot-name">${isTaken ? '🔒 محجوز' : 'متاح'}</div>
+                `;
+
+                if (!isTaken) {
+                    div.onclick = () => {
+                        selectedSlot = i;
+                        updateSlotsUI(state);
+                        document.getElementById('joinBtn').disabled = false;
+                    };
+                }
+
+                container.appendChild(div);
+            }
+        }
+
+        function updateGameUI(state) {
+            const container = document.getElementById('gridsContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= 4; i++) {
+                const player = Object.values(state.players).find(p => p.slot === i);
+                const section = document.createElement('div');
+
+                if (player) {
+                    const isMe = i === mySlot;
+                    section.className = `player-section ${isMe ? 'me' : ''}`;
+                    section.innerHTML = `
+                        <div class="player-header header${i}">
+                            <div>
+                                ${playerEmojis[i-1]} ${playerNames[i-1]}
+                                ${isMe ? '<span style="background:rgba(255,215,0,0.3); padding:2px 8px; border-radius:10px; font-size:11px; margin-right:5px;">أنت</span>' : ''}
+                            </div>
+                            <div>${player.score} نقطة</div>
+                        </div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" style="width: ${Math.round(player.completed/81*100)}%"></div>
+                        </div>
+                        <div class="grid" id="grid${i}"></div>
+                        ${isMe ? `
+                        <div class="number-pad">
+                            ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="num-btn" onclick="placeNum(${n})">${n}</button>`).join('')}
+                            <button class="num-btn" onclick="clearCell()">❌</button>
+                        </div>
+                        ` : ''}
+                    `;
+                } else {
+                    section.className = 'player-section empty';
+                    section.innerHTML = `
+                        <div style="text-align:center; color:#999;">
+                            <div style="font-size:48px; opacity:0.5;">${playerEmojis[i-1]}</div>
+                            <div style="font-size:18px; font-weight:bold;">في انتظار ${playerNames[i-1]}</div>
+                        </div>
+                    `;
+                }
+
+                container.appendChild(section);
+            }
+
+            if (mySlot) renderGrid();
+        }
+
+        document.getElementById('joinBtn').onclick = () => {
+            if (selectedSlot) {
+                socket.emit('requestSlot', selectedSlot);
+            }
+        };
+
+        function showGame() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerNames[mySlot-1]}`;
+        }
+
+        function leaveGame() {
+            if (confirm('هل تريد مغادرة اللعبة؟')) {
+                location.reload();
+            }
+        }
+
+        function requestNewGame() {
+            socket.emit('newGame');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function showNotification(msg) {
+            alert(msg);
+        }
+
+        // Sudoku Logic
+        function isValid(board, row, col, num) {
+            for (let x = 0; x < 9; x++) {
+                if (board[row][x] === num || board[x][col] === num) return false;
+            }
+            let sr = row - row % 3, sc = col - col % 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i+sr][j+sc] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function solve(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] === 0) {
+                        for (let n = 1; n <= 9; n++) {
+                            if (isValid(board, r, c, n)) {
+                                board[r][c] = n;
+                                if (solve(board)) return true;
+                                board[r][c] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function generateBoard() {
+            const board = Array(9).fill(null).map(() => Array(9).fill(0));
+            
+            for (let i = 0; i < 15; i++) {
+                let num = (i % 9) + 1;
+                let tries = 0;
+                while (tries < 100) {
+                    let r = Math.floor(Math.random() * 9);
+                    let c = Math.floor(Math.random() * 9);
+                    if (board[r][c] === 0 && isValid(board, r, c, num)) {
+                        board[r][c] = num;
+                        break;
+                    }
+                    tries++;
+                }
+            }
+
+            solve(board);
+            localData.solution = board.map(row => [...row]);
+            
+            let removed = 0;
+            while (removed < 40) {
+                let r = Math.floor(Math.random() * 9);
+                let c = Math.floor(Math.random() * 9);
+                if (board[r][c] !== 0) {
+                    board[r][c] = 0;
+                    removed++;
+                }
+            }
+            
+            localData.board = board;
+            localData.score = 0;
+            localData.completed = 0;
+            localData.finished = false;
+
+            socket.emit('sendBoard', {
+                board: localData.board,
+                solution: localData.solution
+            });
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById(`grid${mySlot}`);
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = i;
+                    cell.dataset.c = j;
+
+                    if (localData.board[i][j] !== 0) {
+                        cell.textContent = localData.board[i][j];
+                        if (localData.board[i][j] === localData.solution[i][j]) {
+                            cell.classList.add('fixed');
+                        }
+                    }
+
+                    cell.onclick = () => selectCell(i, j);
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function selectCell(r, c) {
+            const grid = document.getElementById(`grid${mySlot}`);
+            grid.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
+
+            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if (!cell.classList.contains('fixed')) {
+                cell.classList.add('selected');
+                localData.selected = {r, c};
+            }
+        }
+
+        function placeNum(num) {
+            if (!localData.selected || localData.finished) return;
+
+            const {r, c} = localData.selected;
+            localData.board[r][c] = num;
+
+            const grid = document.getElementById(`grid${mySlot}`);
+            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+
+            if (num === localData.solution[r][c]) {
+                localData.score += 10;
+                cell.classList.add('correct');
+                setTimeout(() => cell.classList.remove('correct'), 500);
+            } else {
+                localData.score = Math.max(0, localData.score - 2);
+                cell.classList.add('wrong');
+                setTimeout(() => cell.classList.remove('wrong'), 500);
+            }
+
+            renderGrid();
+            selectCell(r, c);
+            updateProgress();
+        }
+
+        function clearCell() {
+            if (!localData.selected || localData.finished) return;
+            
+            const {r, c} = localData.selected;
+            localData.board[r][c] = 0;
+            renderGrid();
+            selectCell(r, c);
+        }
+
+        function updateProgress() {
+            let completed = 0;
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
+                        completed++;
+                    }
+                }
+            }
+
+            localData.completed = completed;
+
+            if (completed === 81 && !localData.finished) {
+                localData.finished = true;
+                alert('🎉 مبروك! أنهيت اللعبة!');
+            }
+
+            socket.emit('updateProgress', {
+                score: localData.score,
+                completed: localData.completed,
+                finished: localData.finished
+            });
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${m}:${s}`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
