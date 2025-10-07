@@ -869,4 +869,49 @@
         }
 
         function updateProgress() {
-            let completed = 0
+            let completed = 0;
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
+                        completed++;
+                    }
+                }
+            }
+
+            localData.completed = completed;
+
+            if (completed === 81 && !localData.finished) {
+                localData.finished = true;
+                alert('🎉 مبروك! أنهيت اللعبة!');
+            }
+
+            socket.emit('updateProgress', {
+                score: localData.score,
+                completed: localData.completed,
+                finished: localData.finished
+            });
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        // Enter key support
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('playerName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitName();
+            });
+            document.getElementById('lockInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitLock();
+            });
+        });
+    </script>
+</body>
+</html>
