@@ -324,6 +324,66 @@
             background: #673ab7;
         }
 
+        /* Kick Modal */
+        .kick-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .kick-modal.show {
+            display: flex;
+        }
+
+        .kick-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            animation: slideDown 0.5s;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .kick-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .kick-modal h2 {
+            color: #f44336;
+            margin-bottom: 15px;
+        }
+
+        .kick-modal p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 18px;
+        }
+
+        .kick-modal button {
+            background: #667eea;
+            padding: 15px 40px;
+            font-size: 18px;
+        }
+
         @media (max-width: 1200px) {
             .grids-container { grid-template-columns: 1fr; }
             .cell { width: 32px; height: 32px; font-size: 16px; }
@@ -336,6 +396,16 @@
     </style>
 </head>
 <body>
+    <!-- Kick Modal -->
+    <div class="kick-modal" id="kickModal">
+        <div class="kick-modal-content">
+            <div class="kick-icon">🚫</div>
+            <h2>تم طردك من اللعبة</h2>
+            <p id="kickMessage">تم طردك من قبل المسؤول</p>
+            <button onclick="reloadPage()">العودة للصفحة الرئيسية</button>
+        </div>
+    </div>
+
     <div class="login-screen" id="loginScreen">
         <div class="login-container">
             <h1>🎮 سودوكو - 4 لاعبين</h1>
@@ -429,6 +499,22 @@
                 showNotification(`${playerEmojis[data.slot-1]} ${playerNames[data.slot-1]} أنهى اللعبة!`);
             }
         });
+
+        // Admin kicked event
+        socket.on('kicked', (data) => {
+            console.log('Kicked by admin:', data);
+            document.getElementById('kickMessage').textContent = data.message || 'تم طردك من قبل المسؤول';
+            document.getElementById('kickModal').classList.add('show');
+            
+            // Stop timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        });
+
+        function reloadPage() {
+            location.reload();
+        }
 
         // UI Functions
         function updateSlotsUI(state) {
