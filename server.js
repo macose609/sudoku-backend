@@ -28,9 +28,10 @@ app.get('/admin', (req, res) => {
 
 // Game state
 const gameState = {
-    players: {}, // { socketId: { slot, name, score, completed, finished, board, solution } }
+    players: {}, // { socketId: { slot, name, lock, score, completed, finished, board, solution } }
     maxPlayers: 4,
     slots: [false, false, false, false], // slot availability
+    pendingPlayers: {}, // { socketId: { name, lock } } - waiting for lock approval
     stats: {
         totalPlayers: 0,
         gamesPlayed: 0,
@@ -41,6 +42,11 @@ const gameState = {
 // Admin connections
 const adminSockets = new Set();
 
+// Generate random lock code
+function generateLock() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 io.on('connection', (socket) => {
     console.log('New connection:', socket.id);
 
@@ -48,22 +54,67 @@ io.on('connection', (socket) => {
     socket.emit('gameState', getPublicGameState());
 
     // ============================================
+    // PLAYER LOCK SYSTEM
+    // ============================================
+
+    // Player requests lock
+    socket.on('requestLock', (data) => {
+        const lock = generateLock();
+        
+        gameState.pendingPlayers[socket.id] = {
+            name: data.name,
+            lock: lock,
+            timestamp: Date.now()
+        };
+
+        console.log(`Player ${data.name} (${socket.id}) requested lock: ${lock}`);
+
+        // Send lock to player
+        socket.emit('lockAssigned', { lock: lock });
+
+        // Notify admins about new player request
+        adminSockets.forEach(adminId => {
+            io.to(adminId).emit('playerRequest', {
+                playerId: socket.id,
+                name: data.name,
+                lock: lock
+            });
+        });
+    });
+
+    // Player verified lock
+    socket.on('lockVerified', (data) => {
+        const pending = gameState.pendingPlayers[socket.id];
+        
+        if (!pending || pending.lock !== data.lock) {
+            socket.emit('lockError', 'الرمز غير صحيح');
+            return;
+        }
+
+        console.log(`Player ${data.name} verified lock successfully`);
+        
+        // Keep in pending until they select a slot
+        socket.emit('gameState', getPublicGameState());
+    });
+
+    // ============================================
     // ADMIN EVENTS
     // ============================================
 
-    // Admin login
     socket.on('adminLogin', () => {
         adminSockets.add(socket.id);
         console.log('Admin logged in:', socket.id);
         
-        // Send full game state to admin
         socket.emit('gameState', getPublicGameState());
-        
-        // Send stats
         socket.emit('adminStats', gameState.stats);
+        
+        // Send pending players list
+        socket.emit('pendingPlayers', Object.keys(gameState.pendingPlayers).map(id => ({
+            id,
+            ...gameState.pendingPlayers[id]
+        })));
     });
 
-    // Admin kick player
     socket.on('adminKickPlayer', (playerId) => {
         if (!adminSockets.has(socket.id)) return;
         
@@ -74,19 +125,14 @@ io.on('connection', (socket) => {
             gameState.slots[slot - 1] = false;
             delete gameState.players[playerId];
             
-            // Disconnect the player
             io.to(playerId).emit('kicked', { message: 'تم طردك من قبل المسؤول' });
             io.to(playerId).disconnectSockets(true);
             
-            // Broadcast update
             io.emit('gameState', getPublicGameState());
-            
-            // Notify admin
             io.to(socket.id).emit('playerLeft', { playerId });
         }
     });
 
-    // Admin reset player
     socket.on('adminResetPlayer', (playerId) => {
         if (!adminSockets.has(socket.id)) return;
         
@@ -99,21 +145,16 @@ io.on('connection', (socket) => {
             gameState.players[playerId].board = null;
             gameState.players[playerId].solution = null;
             
-            // Tell player to reset
             io.to(playerId).emit('resetGame');
-            
-            // Broadcast update
             io.emit('gameState', getPublicGameState());
         }
     });
 
-    // Admin reset all games
     socket.on('adminResetAll', () => {
         if (!adminSockets.has(socket.id)) return;
         
         console.log(`Admin ${socket.id} resetting all games`);
         
-        // Reset all players
         for (let playerId in gameState.players) {
             gameState.players[playerId].score = 0;
             gameState.players[playerId].completed = 0;
@@ -126,58 +167,61 @@ io.on('connection', (socket) => {
         io.emit('gameState', getPublicGameState());
     });
 
-    // Admin kick all players
     socket.on('adminKickAll', () => {
         if (!adminSockets.has(socket.id)) return;
         
         console.log(`Admin ${socket.id} kicking all players`);
         
-        // Get all player IDs
         const playerIds = Object.keys(gameState.players);
         
-        // Kick each player
         playerIds.forEach(playerId => {
             io.to(playerId).emit('kicked', { message: 'تم إنهاء اللعبة من قبل المسؤول' });
             io.to(playerId).disconnectSockets(true);
         });
         
-        // Clear game state
         gameState.players = {};
         gameState.slots = [false, false, false, false];
         
-        // Broadcast update
         io.emit('gameState', getPublicGameState());
     });
 
-    // Admin refresh data
     socket.on('adminRefresh', () => {
         if (!adminSockets.has(socket.id)) return;
         
         socket.emit('gameState', getPublicGameState());
         socket.emit('adminStats', gameState.stats);
+        socket.emit('pendingPlayers', Object.keys(gameState.pendingPlayers).map(id => ({
+            id,
+            ...gameState.pendingPlayers[id]
+        })));
     });
 
     // ============================================
-    // PLAYER EVENTS
+    // PLAYER GAME EVENTS
     // ============================================
 
-    // Request slot
-    socket.on('requestSlot', (slotNumber) => {
+    socket.on('requestSlot', (data) => {
+        const slotNumber = data.slot;
+        const pending = gameState.pendingPlayers[socket.id];
+        
+        // Verify lock
+        if (!pending || pending.lock !== data.lock) {
+            socket.emit('slotError', 'الرمز غير صحيح');
+            return;
+        }
+
         console.log(`Socket ${socket.id} requests slot ${slotNumber}`);
         
-        // Check if slot is available
         if (slotNumber < 1 || slotNumber > 4) {
             socket.emit('slotError', 'رقم المكان غير صحيح');
             return;
         }
 
-        // Check if game is full
         if (Object.keys(gameState.players).length >= 4) {
             socket.emit('slotError', 'اللعبة ممتلئة! (4/4)');
             return;
         }
 
-        // Check if slot is taken
         const slotTaken = Object.values(gameState.players).some(p => p.slot === slotNumber);
         if (slotTaken) {
             socket.emit('slotError', 'هذا المكان محجوز!');
@@ -188,7 +232,8 @@ io.on('connection', (socket) => {
         gameState.players[socket.id] = {
             id: socket.id,
             slot: slotNumber,
-            name: `لاعب ${slotNumber}`,
+            name: data.name,
+            lock: data.lock,
             score: 0,
             completed: 0,
             finished: false,
@@ -201,27 +246,27 @@ io.on('connection', (socket) => {
         gameState.slots[slotNumber - 1] = true;
         gameState.stats.totalPlayers++;
 
-        // Notify player
+        // Remove from pending
+        delete gameState.pendingPlayers[socket.id];
+
         socket.emit('slotAssigned', {
             slot: slotNumber,
             playerId: socket.id
         });
 
-        // Broadcast to all
         io.emit('gameState', getPublicGameState());
         
-        // Notify admins
         adminSockets.forEach(adminId => {
             io.to(adminId).emit('playerJoined', {
                 playerId: socket.id,
+                name: data.name,
                 slot: slotNumber
             });
         });
 
-        console.log(`Slot ${slotNumber} assigned to ${socket.id}`);
+        console.log(`Slot ${slotNumber} assigned to ${data.name} (${socket.id})`);
     });
 
-    // Receive board from player
     socket.on('sendBoard', (data) => {
         if (!gameState.players[socket.id]) return;
         
@@ -231,7 +276,6 @@ io.on('connection', (socket) => {
         console.log(`Board received from ${socket.id}`);
     });
 
-    // Update player progress
     socket.on('updateProgress', (data) => {
         if (!gameState.players[socket.id]) return;
 
@@ -239,7 +283,6 @@ io.on('connection', (socket) => {
         gameState.players[socket.id].completed = data.completed;
         gameState.players[socket.id].finished = data.finished;
 
-        // Broadcast updated state
         io.emit('gameState', getPublicGameState());
 
         if (data.finished) {
@@ -252,13 +295,14 @@ io.on('connection', (socket) => {
             
             io.emit('playerFinished', {
                 slot: gameState.players[socket.id].slot,
+                playerName: gameState.players[socket.id].name,
                 score: data.score
             });
 
-            // Notify admins
             adminSockets.forEach(adminId => {
                 io.to(adminId).emit('gameFinished', {
                     playerId: socket.id,
+                    playerName: gameState.players[socket.id].name,
                     time: formatTime(timePlayed),
                     score: data.score
                 });
@@ -266,9 +310,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // New game request
     socket.on('newGame', () => {
-        // Reset all players
         for (let playerId in gameState.players) {
             gameState.players[playerId].score = 0;
             gameState.players[playerId].completed = 0;
@@ -283,34 +325,37 @@ io.on('connection', (socket) => {
         console.log('New game started');
     });
 
-    // Handle disconnect
     socket.on('disconnect', () => {
         console.log('Disconnected:', socket.id);
         
-        // Remove from admin sockets if admin
         adminSockets.delete(socket.id);
+        
+        // Remove from pending
+        if (gameState.pendingPlayers[socket.id]) {
+            delete gameState.pendingPlayers[socket.id];
+        }
         
         // Remove from players
         if (gameState.players[socket.id]) {
             const slot = gameState.players[socket.id].slot;
+            const name = gameState.players[socket.id].name;
             gameState.slots[slot - 1] = false;
             delete gameState.players[socket.id];
             
             io.emit('gameState', getPublicGameState());
             
-            // Notify admins
             adminSockets.forEach(adminId => {
                 io.to(adminId).emit('playerLeft', {
-                    playerId: socket.id
+                    playerId: socket.id,
+                    name: name
                 });
             });
             
-            console.log(`Slot ${slot} is now available`);
+            console.log(`${name} left - Slot ${slot} is now available`);
         }
     });
 });
 
-// Helper function to get public game state
 function getPublicGameState() {
     const publicPlayers = {};
     
@@ -336,7 +381,6 @@ function getPublicGameState() {
     };
 }
 
-// Helper function to format time
 function formatTime(seconds) {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
