@@ -457,4 +457,269 @@
                 </div>
 
                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button class="action-btn reset-btn" onclick="resetAllGames()" style="
+                    <button class="action-btn reset-btn" onclick="resetAllGames()" style="padding: 15px 30px; font-size: 16px;">
+                        🔄 إعادة تعيين جميع المباريات
+                    </button>
+                    <button class="action-btn kick-btn" onclick="kickAllPlayers()" style="padding: 15px 30px; font-size: 16px;">
+                        🚫 طرد جميع اللاعبين
+                    </button>
+                    <button class="action-btn" onclick="exportStats()" style="background: #2196f3; color: white; padding: 15px 30px; font-size: 16px;">
+                        📊 تصدير الإحصائيات
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 سجل النشاطات</h2>
+                    <button class="refresh-btn" onclick="clearLog()">🗑️ مسح السجل</button>
+                </div>
+                <div id="activityLog" style="max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 15px; border-radius: 10px; font-family: monospace;">
+                    <div style="color: #999; text-align: center; padding: 20px;">لا توجد نشاطات بعد...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const ADMIN_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin123'
+        };
+
+        let isAdmin = false;
+        let gameStats = {
+            totalPlayers: 0,
+            activePlayers: 0,
+            pendingCount: 0,
+            gamesPlayed: 0
+        };
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                isAdmin = true;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminPanel').classList.add('active');
+                socket.emit('adminLogin');
+                refreshData();
+                addLog('✅ تم تسجيل دخول المسؤول بنجاح');
+            } else {
+                showError('اسم المستخدم أو كلمة المرور غير صحيحة');
+            }
+        }
+
+        function logout() {
+            if (confirm('هل تريد تسجيل الخروج؟')) {
+                location.reload();
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // Socket Events
+        socket.on('gameState', (state) => {
+            if (!isAdmin) return;
+            updateDashboard(state);
+        });
+
+        socket.on('pendingPlayers', (pending) => {
+            if (!isAdmin) return;
+            updatePendingPlayers(pending);
+        });
+
+        socket.on('playerRequest', (data) => {
+            if (!isAdmin) return;
+            addLog(`🔔 طلب جديد من: ${data.name} - الرمز: ${data.lock}`);
+            refreshData();
+        });
+
+        socket.on('playerJoined', (data) => {
+            if (!isAdmin) return;
+            addLog(`🟢 ${data.name} انضم - الموقع ${data.slot}`);
+            refreshData();
+        });
+
+        socket.on('playerLeft', (data) => {
+            if (!isAdmin) return;
+            addLog(`🔴 ${data.name || 'لاعب'} غادر`);
+            refreshData();
+        });
+
+        socket.on('gameFinished', (data) => {
+            if (!isAdmin) return;
+            gameStats.gamesPlayed++;
+            addLog(`🏆 ${data.playerName} أنهى اللعبة - النقاط: ${data.score}`);
+            refreshData();
+        });
+
+        // Update Dashboard
+        function updateDashboard(state) {
+            const players = Object.values(state.players);
+            gameStats.activePlayers = players.length;
+            gameStats.totalPlayers = Math.max(gameStats.totalPlayers, players.length);
+
+            document.getElementById('totalPlayers').textContent = gameStats.totalPlayers;
+            document.getElementById('activePlayers').textContent = gameStats.activePlayers;
+            document.getElementById('gamesPlayed').textContent = gameStats.gamesPlayed;
+
+            // Update players table
+            const tbody = document.getElementById('playersTableBody');
+            tbody.innerHTML = '';
+
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين نشطين</td></tr>';
+                return;
+            }
+
+            const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
+
+            players.forEach(player => {
+                const tr = document.createElement('tr');
+                const completion = Math.round(player.completed / 81 * 100);
+                
+                tr.innerHTML = `
+                    <td>
+                        <button class="action-btn kick-btn" onclick="kickPlayer('${player.id}')">طرد</button>
+                        <button class="action-btn reset-btn" onclick="resetPlayer('${player.id}')">إعادة</button>
+                    </td>
+                    <td>
+                        <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #4caf50, #8bc34a); height: 100%; width: ${completion}%;"></div>
+                        </div>
+                        ${completion}%
+                    </td>
+                    <td><strong>${player.score}</strong></td>
+                    <td><span class="lock-code" style="font-size: 14px; padding: 4px 8px;">****</span></td>
+                    <td>${playerEmojis[player.slot - 1]} موقع ${player.slot}</td>
+                    <td><strong>${player.name}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Update Pending Players
+        function updatePendingPlayers(pending) {
+            gameStats.pendingCount = pending.length;
+            document.getElementById('pendingPlayers').textContent = pending.length;
+
+            const tbody = document.getElementById('pendingTableBody');
+            tbody.innerHTML = '';
+
+            if (pending.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين في الانتظار</td></tr>';
+                return;
+            }
+
+            pending.forEach(player => {
+                const tr = document.createElement('tr');
+                const timeAgo = formatTimeAgo(player.timestamp);
+                
+                tr.innerHTML = `
+                    <td style="color: #999; font-size: 12px;">${timeAgo}</td>
+                    <td><span class="lock-code">${player.lock}</span></td>
+                    <td><strong>${player.name}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function formatTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return `منذ ${seconds} ثانية`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `منذ ${minutes} دقيقة`;
+            const hours = Math.floor(minutes / 60);
+            return `منذ ${hours} ساعة`;
+        }
+
+        // Admin Actions
+        function kickPlayer(playerId) {
+            if (confirm('هل تريد طرد هذا اللاعب؟')) {
+                socket.emit('adminKickPlayer', playerId);
+                addLog(`🚫 تم طرد لاعب`);
+            }
+        }
+
+        function resetPlayer(playerId) {
+            if (confirm('هل تريد إعادة تعيين لعبة هذا اللاعب؟')) {
+                socket.emit('adminResetPlayer', playerId);
+                addLog(`🔄 تم إعادة تعيين لعبة لاعب`);
+            }
+        }
+
+        function resetAllGames() {
+            if (confirm('هل تريد إعادة تعيين جميع المباريات؟')) {
+                socket.emit('adminResetAll');
+                addLog('🔄 تم إعادة تعيين جميع المباريات');
+            }
+        }
+
+        function kickAllPlayers() {
+            if (confirm('هل تريد طرد جميع اللاعبين؟ هذا سيؤدي إلى إنهاء جميع المباريات.')) {
+                socket.emit('adminKickAll');
+                addLog('🚫 تم طرد جميع اللاعبين');
+            }
+        }
+
+        function exportStats() {
+            const data = {
+                stats: gameStats,
+                timestamp: new Date().toISOString(),
+                players: gameStats.activePlayers
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sudoku-stats-${Date.now()}.json`;
+            a.click();
+            
+            addLog('📊 تم تصدير الإحصائيات');
+        }
+
+        function refreshData() {
+            socket.emit('adminRefresh');
+            addLog('🔄 تم تحديث البيانات');
+        }
+
+        function addLog(message) {
+            const logEl = document.getElementById('activityLog');
+            const time = new Date().toLocaleTimeString('ar-MA');
+            const entry = document.createElement('div');
+            entry.style.padding = '8px';
+            entry.style.borderBottom = '1px solid #e0e0e0';
+            entry.innerHTML = `<span style="color: #999;">[${time}]</span> ${message}`;
+            
+            if (logEl.firstChild && logEl.firstChild.style) {
+                logEl.insertBefore(entry, logEl.firstChild);
+            } else {
+                logEl.innerHTML = '';
+                logEl.appendChild(entry);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('activityLog').innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">تم مسح السجل...</div>';
+        }
+
+        // Enter key for login
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+        });
+    </script>
+</body>
+</html>
