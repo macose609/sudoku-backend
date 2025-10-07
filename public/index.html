@@ -492,7 +492,6 @@
             </div>
             <div class="timer" id="timer">00:00</div>
             <div class="controls">
-                <button onclick="requestNewGame()">🎮 لعبة جديدة</button>
                 <button onclick="leaveGame()" class="leave-btn">🚪 غادر</button>
             </div>
         </div>
@@ -718,10 +717,6 @@
             if (confirm('هل تريد مغادرة اللعبة؟')) {
                 location.reload();
             }
-        }
-
-        function requestNewGame() {
-            socket.emit('newGame');
         }
 
         // Sudoku Logic
