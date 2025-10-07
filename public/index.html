@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سودوكو - 4 لاعبين مباشر</title>
+    <title>Admin Panel - سودوكو</title>
     <style>
         * {
             margin: 0;
@@ -13,48 +13,46 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
-            padding: 15px;
         }
 
-        .screen {
+        .login-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
 
-        .screen.active {
-            display: flex;
+        .login-screen.hidden {
+            display: none;
         }
 
-        .form-container {
+        .login-box {
             background: white;
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 450px;
             width: 90%;
+            max-width: 400px;
             text-align: center;
         }
 
-        .form-container h1 {
+        .login-box h1 {
             color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-size: 2em;
         }
 
-        .form-container p {
+        .login-box p {
             color: #666;
             margin-bottom: 30px;
-            font-size: 16px;
         }
 
         .input-group {
@@ -67,17 +65,15 @@
             margin-bottom: 8px;
             color: #333;
             font-weight: bold;
-            font-size: 16px;
         }
 
         .input-group input {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
-            font-size: 18px;
+            font-size: 16px;
             transition: all 0.3s;
-            text-align: center;
         }
 
         .input-group input:focus {
@@ -86,7 +82,7 @@
             box-shadow: 0 0 10px rgba(102,126,234,0.3);
         }
 
-        .submit-btn {
+        .login-btn {
             width: 100%;
             padding: 15px;
             background: #667eea;
@@ -97,282 +93,11 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 10px;
         }
 
-        .submit-btn:hover:not(:disabled) {
+        .login-btn:hover {
             background: #5568d3;
             transform: translateY(-2px);
-        }
-
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .waiting-message {
-            background: rgba(255, 235, 59, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 2px solid #ffeb3b;
-        }
-
-        .waiting-message p {
-            color: #f57f17;
-            font-weight: bold;
-            margin: 0;
-        }
-
-        .slots-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 30px 0;
-        }
-
-        .slot-card {
-            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            padding: 20px;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 3px solid transparent;
-        }
-
-        .slot-card:hover:not(.taken) {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .slot-card.taken {
-            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .slot-card.selected {
-            border-color: #2196f3;
-            box-shadow: 0 0 20px rgba(33,150,243,0.6);
-        }
-
-        .slot-emoji {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .connection-status {
-            background: rgba(255,255,255,0.2);
-            padding: 10px;
-            border-radius: 10px;
-            color: white;
-            margin: 20px 0;
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-left: 5px;
-            background: #4caf50;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .game-screen {
-            display: none;
-        }
-
-        .game-screen.active {
-            display: block;
-        }
-
-        h1 {
-            text-align: center;
-            color: white;
-            margin-bottom: 20px;
-            font-size: 2.2em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .game-info {
-            background: rgba(255,255,255,0.95);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .timer {
-            font-size: 36px;
-            color: #e91e63;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            background: #2196f3;
-            color: white;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        button:hover {
-            background: #1976d2;
-            transform: translateY(-2px);
-        }
-
-        .leave-btn {
-            background: #f44336;
-        }
-
-        .grids-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .player-section {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .player-section.me {
-            box-shadow: 0 0 30px rgba(255,215,0,0.6);
-            transform: scale(1.02);
-        }
-
-        .player-section.empty {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 400px;
-        }
-
-        .player-header {
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            color: white;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header1 { background: linear-gradient(135deg, #f44336 0%, #e91e63 100%); }
-        .header2 { background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%); }
-        .header3 { background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%); color: #333; }
-        .header4 { background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); }
-
-        .completion-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .completion-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4caf50, #8bc34a);
-            transition: width 0.5s;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            gap: 0;
-            margin: 10px auto;
-            width: fit-content;
-            border: 2px solid #333;
-            background: #333;
-        }
-
-        .cell {
-            width: 35px;
-            height: 35px;
-            border: 1px solid #999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .cell:hover:not(.fixed) {
-            background: #e3f2fd;
-            transform: scale(1.1);
-        }
-
-        .cell.fixed {
-            background: #f5f5f5;
-            cursor: default;
-        }
-
-        .cell.selected {
-            background: #bbdefb;
-        }
-
-        .cell.correct {
-            background: #c8e6c9;
-            animation: pulse-cell 0.5s;
-        }
-
-        .cell.wrong {
-            background: #ffcdd2;
-            animation: shake 0.3s;
-        }
-
-        @keyframes pulse-cell {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .number-pad {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-        }
-
-        .num-btn {
-            padding: 12px;
-            font-size: 18px;
-            background: #673ab7;
         }
 
         .error-msg {
@@ -384,534 +109,352 @@
             margin-top: 15px;
         }
 
-        .error-msg.show {
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.active {
             display: block;
         }
 
-        @media (max-width: 1200px) {
-            .grids-container { grid-template-columns: 1fr; }
-            .cell { width: 32px; height: 32px; font-size: 16px; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 1.8em;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .stat-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .section-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .refresh-btn {
+            background: #4caf50;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #45a049;
+        }
+
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .players-table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: right;
+            font-weight: bold;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .players-table td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        .players-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-playing {
+            background: #bbdefb;
+            color: #1565c0;
+        }
+
+        .status-waiting {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .lock-code {
+            background: #e8f5e9;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b5e20;
+            display: inline-block;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0 3px;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .kick-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .kick-btn:hover {
+            background: #d32f2f;
+        }
+
+        .reset-btn {
+            background: #ff9800;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #f57c00;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            opacity: 0.5;
+            margin-bottom: 15px;
         }
 
         @media (max-width: 768px) {
-            .slots-container { grid-template-columns: 1fr; }
-            .cell { width: 28px; height: 28px; font-size: 14px; }
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .players-table {
+                font-size: 14px;
+            }
+
+            .lock-code {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Step 1: Enter Name -->
-    <div class="screen active" id="nameScreen">
-        <div class="form-container">
-            <h1>🎮 سودوكو</h1>
-            <p>أدخل اسمك للبدء</p>
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1>🔐 لوحة التحكم</h1>
+            <p>تسجيل دخول المسؤول</p>
             
             <div class="input-group">
-                <label>الاسم</label>
-                <input type="text" id="playerName" placeholder="اكتب اسمك هنا..." maxlength="20" />
-            </div>
-
-            <button class="submit-btn" onclick="submitName()">متابعة</button>
-
-            <div class="error-msg" id="nameError"></div>
-        </div>
-    </div>
-
-    <!-- Step 2: Waiting for Lock -->
-    <div class="screen" id="waitingScreen">
-        <div class="form-container">
-            <h1>⏳ انتظر قليلاً</h1>
-            <p>تم إرسال طلبك للمسؤول</p>
-
-            <div class="waiting-message">
-                <p>🔐 جاري الحصول على الرمز السري...</p>
-            </div>
-
-            <div style="margin: 20px 0; color: #666;">
-                <strong>اسمك:</strong> <span id="displayName" style="color: #667eea;"></span>
-            </div>
-
-            <p style="font-size: 14px; color: #999;">
-                سيتم إرسال رمز سري لك من قبل المسؤول
-            </p>
-        </div>
-    </div>
-
-    <!-- Step 3: Enter Lock Code -->
-    <div class="screen" id="lockScreen">
-        <div class="form-container">
-            <h1>🔐 أدخل الرمز</h1>
-            <p>تم إرسال رمزك السري</p>
-
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <p style="color: #2e7d32; margin: 0; font-size: 14px;">
-                    <strong>رمزك السري:</strong>
-                </p>
-                <p style="color: #1b5e20; font-size: 32px; font-weight: bold; margin: 10px 0; font-family: monospace;" id="displayLock">
-                    ****
-                </p>
+                <label>اسم المستخدم</label>
+                <input type="text" id="username" placeholder="أدخل اسم المستخدم" />
             </div>
 
             <div class="input-group">
-                <label>أدخل الرمز للدخول</label>
-                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 10px; font-size: 24px; font-family: monospace;" />
+                <label>كلمة المرور</label>
+                <input type="password" id="password" placeholder="أدخل كلمة المرور" />
             </div>
 
-            <button class="submit-btn" onclick="submitLock()">دخول للعبة</button>
+            <button class="login-btn" onclick="login()">دخول</button>
 
-            <div class="error-msg" id="lockError"></div>
+            <div class="error-msg" id="errorMsg"></div>
         </div>
     </div>
 
-    <!-- Step 4: Select Slot -->
-    <div class="screen" id="slotScreen">
-        <div class="form-container">
-            <h1>🎮 اختر موقعك</h1>
-            <p>اختر مكانك في اللعبة</p>
-
-            <div class="connection-status">
-                <span class="status-dot"></span>
-                متصل بالسيرفر | <span id="onlineCount">0</span>/4 لاعبين
-            </div>
-
-            <div class="slots-container" id="slotsContainer"></div>
-
-            <button class="submit-btn" id="joinBtn" disabled onclick="joinGame()">انضم للعبة</button>
-            
-            <div class="error-msg" id="slotError"></div>
-        </div>
-    </div>
-
-    <!-- Game Screen -->
-    <div class="game-screen" id="gameScreen">
-        <h1>🎮 سودوكو - 4 لاعبين مباشر 🎮</h1>
-        
-        <div class="game-info">
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 25px; border-radius: 20px; display: inline-block; margin-bottom: 10px;" id="myInfo">
-                أنت: 🔴 لاعب 1
-            </div>
-            <div class="timer" id="timer">00:00</div>
-            <div class="controls">
-                <button onclick="requestNewGame()">🎮 لعبة جديدة</button>
-                <button onclick="leaveGame()" class="leave-btn">🚪 غادر</button>
-            </div>
+    <div class="admin-panel" id="adminPanel">
+        <div class="navbar">
+            <h1>🎮 لوحة تحكم سودوكو</h1>
+            <button class="logout-btn" onclick="logout()">🚪 تسجيل خروج</button>
         </div>
 
-        <div class="grids-container" id="gridsContainer"></div>
-    </div>
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="totalPlayers">0</div>
+                    <div class="stat-label">إجمالي اللاعبين</div>
+                </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
-        const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
+                <div class="stat-card">
+                    <div class="stat-icon">🎮</div>
+                    <div class="stat-value" id="activePlayers">0</div>
+                    <div class="stat-label">لاعبين نشطين</div>
+                </div>
 
-        let playerName = '';
-        let playerLock = '';
-        let mySlot = null;
-        let myPlayerId = null;
-        let selectedSlot = null;
-        let startTime = null;
-        let timerInterval = null;
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-value" id="pendingPlayers">0</div>
+                    <div class="stat-label">في الانتظار</div>
+                </div>
 
-        const localData = {
-            board: [],
-            solution: [],
-            selected: null,
-            score: 0,
-            completed: 0,
-            finished: false
-        };
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value" id="gamesPlayed">0</div>
+                    <div class="stat-label">مباريات منتهية</div>
+                </div>
+            </div>
 
-        // Socket events
-        socket.on('connect', () => {
-            console.log('Connected to server');
-            myPlayerId = socket.id;
-        });
+            <!-- Pending Players Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>⏳ لاعبين في الانتظار</h2>
+                    <button class="refresh-btn" onclick="refreshData()">🔄 تحديث</button>
+                </div>
 
-        socket.on('lockAssigned', (data) => {
-            playerLock = data.lock;
-            document.getElementById('displayLock').textContent = data.lock;
-            showScreen('lockScreen');
-        });
+                <div id="pendingContent">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th>الوقت</th>
+                                <th>الرمز السري</th>
+                                <th>الاسم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTableBody">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين في الانتظار</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-        socket.on('lockError', (msg) => {
-            showError('lockError', msg);
-        });
+            <!-- Active Players Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>👥 اللاعبين النشطين</h2>
+                </div>
 
-        socket.on('gameState', (state) => {
-            updateSlotsUI(state);
-            if (mySlot) {
-                updateGameUI(state);
-            }
-        });
+                <div id="playersContent">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th>إجراءات</th>
+                                <th>الإكمال</th>
+                                <th>النقاط</th>
+                                <th>الرمز</th>
+                                <th>الموقع</th>
+                                <th>الاسم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playersTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999; padding: 30px;">لا يوجد لاعبين نشطين</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-        socket.on('slotAssigned', (data) => {
-            mySlot = data.slot;
-            showGame();
-            generateBoard();
-            startTimer();
-        });
+            <!-- Game Controls -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>⚙️ التحكم في اللعبة</h2>
+                </div>
 
-        socket.on('slotError', (msg) => {
-            showError('slotError', msg);
-        });
-
-        socket.on('resetGame', () => {
-            localData.score = 0;
-            localData.completed = 0;
-            localData.finished = false;
-            generateBoard();
-            startTimer();
-        });
-
-        socket.on('playerFinished', (data) => {
-            if (data.slot !== mySlot) {
-                alert(`${playerEmojis[data.slot-1]} ${data.playerName} أنهى اللعبة!`);
-            }
-        });
-
-        socket.on('kicked', (data) => {
-            alert(data.message || 'تم طردك من قبل المسؤول');
-            location.reload();
-        });
-
-        // Step 1: Submit Name
-        function submitName() {
-            const name = document.getElementById('playerName').value.trim();
-            
-            if (!name || name.length < 2) {
-                showError('nameError', 'الرجاء إدخال اسم صحيح (حرفين على الأقل)');
-                return;
-            }
-
-            playerName = name;
-            document.getElementById('displayName').textContent = name;
-
-            // Request lock from server
-            socket.emit('requestLock', { name: playerName });
-            showScreen('waitingScreen');
-        }
-
-        // Step 2: Submit Lock
-        function submitLock() {
-            const lockInput = document.getElementById('lockInput').value.trim();
-            
-            if (lockInput !== playerLock) {
-                showError('lockError', 'الرمز غير صحيح! حاول مرة أخرى');
-                return;
-            }
-
-            // Lock verified, show slot selection
-            socket.emit('lockVerified', { name: playerName, lock: playerLock });
-            showScreen('slotScreen');
-        }
-
-        // Step 3: Join Game
-        function joinGame() {
-            if (selectedSlot) {
-                socket.emit('requestSlot', { 
-                    slot: selectedSlot, 
-                    name: playerName,
-                    lock: playerLock 
-                });
-            }
-        }
-
-        // UI Functions
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        function showError(elementId, message) {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 3000);
-        }
-
-        function updateSlotsUI(state) {
-            const container = document.getElementById('slotsContainer');
-            container.innerHTML = '';
-            document.getElementById('onlineCount').textContent = state.onlineCount;
-
-            const takenSlots = Object.values(state.players).map(p => p.slot);
-
-            for (let i = 1; i <= 4; i++) {
-                const player = Object.values(state.players).find(p => p.slot === i);
-                const div = document.createElement('div');
-                const isTaken = takenSlots.includes(i);
-                
-                div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
-                div.innerHTML = `
-                    <div class="slot-emoji">${playerEmojis[i-1]}</div>
-                    <div class="slot-status">${player ? player.name : playerNames[i-1]}</div>
-                    <div class="slot-name">${isTaken ? '🔒 محجوز' : 'متاح'}</div>
-                `;
-
-                if (!isTaken) {
-                    div.onclick = () => {
-                        selectedSlot = i;
-                        updateSlotsUI(state);
-                        document.getElementById('joinBtn').disabled = false;
-                    };
-                }
-
-                container.appendChild(div);
-            }
-        }
-
-        function updateGameUI(state) {
-            const container = document.getElementById('gridsContainer');
-            container.innerHTML = '';
-
-            for (let i = 1; i <= 4; i++) {
-                const player = Object.values(state.players).find(p => p.slot === i);
-                const section = document.createElement('div');
-
-                if (player) {
-                    const isMe = i === mySlot;
-                    section.className = `player-section ${isMe ? 'me' : ''}`;
-                    section.innerHTML = `
-                        <div class="player-header header${i}">
-                            <div>
-                                ${playerEmojis[i-1]} ${player.name}
-                                ${isMe ? '<span style="background:rgba(255,215,0,0.3); padding:2px 8px; border-radius:10px; font-size:11px; margin-right:5px;">أنت</span>' : ''}
-                            </div>
-                            <div>${player.score} نقطة</div>
-                        </div>
-                        <div class="completion-bar">
-                            <div class="completion-fill" style="width: ${Math.round(player.completed/81*100)}%"></div>
-                        </div>
-                        <div class="grid" id="grid${i}"></div>
-                        ${isMe ? `
-                        <div class="number-pad">
-                            ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="num-btn" onclick="placeNum(${n})">${n}</button>`).join('')}
-                            <button class="num-btn" onclick="clearCell()">❌</button>
-                        </div>
-                        ` : ''}
-                    `;
-                } else {
-                    section.className = 'player-section empty';
-                    section.innerHTML = `
-                        <div style="text-align:center; color:#999;">
-                            <div style="font-size:48px; opacity:0.5;">${playerEmojis[i-1]}</div>
-                            <div style="font-size:18px; font-weight:bold;">في انتظار ${playerNames[i-1]}</div>
-                        </div>
-                    `;
-                }
-
-                container.appendChild(section);
-            }
-
-            if (mySlot) renderGrid();
-        }
-
-        function showGame() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('gameScreen').classList.add('active');
-            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerName}`;
-        }
-
-        function leaveGame() {
-            if (confirm('هل تريد مغادرة اللعبة؟')) {
-                location.reload();
-            }
-        }
-
-        function requestNewGame() {
-            socket.emit('newGame');
-        }
-
-        // Sudoku Logic
-        function isValid(board, row, col, num) {
-            for (let x = 0; x < 9; x++) {
-                if (board[row][x] === num || board[x][col] === num) return false;
-            }
-            let sr = row - row % 3, sc = col - col % 3;
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (board[i+sr][j+sc] === num) return false;
-                }
-            }
-            return true;
-        }
-
-        function solve(board) {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (board[r][c] === 0) {
-                        for (let n = 1; n <= 9; n++) {
-                            if (isValid(board, r, c, n)) {
-                                board[r][c] = n;
-                                if (solve(board)) return true;
-                                board[r][c] = 0;
-                            }
-                        }
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        function generateBoard() {
-            const board = Array(9).fill(null).map(() => Array(9).fill(0));
-            
-            for (let i = 0; i < 15; i++) {
-                let num = (i % 9) + 1;
-                let tries = 0;
-                while (tries < 100) {
-                    let r = Math.floor(Math.random() * 9);
-                    let c = Math.floor(Math.random() * 9);
-                    if (board[r][c] === 0 && isValid(board, r, c, num)) {
-                        board[r][c] = num;
-                        break;
-                    }
-                    tries++;
-                }
-            }
-
-            solve(board);
-            localData.solution = board.map(row => [...row]);
-            
-            let removed = 0;
-            while (removed < 40) {
-                let r = Math.floor(Math.random() * 9);
-                let c = Math.floor(Math.random() * 9);
-                if (board[r][c] !== 0) {
-                    board[r][c] = 0;
-                    removed++;
-                }
-            }
-            
-            localData.board = board;
-            localData.score = 0;
-            localData.completed = 0;
-            localData.finished = false;
-
-            socket.emit('sendBoard', {
-                board: localData.board,
-                solution: localData.solution
-            });
-
-            renderGrid();
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById(`grid${mySlot}`);
-            if (!grid) return;
-
-            grid.innerHTML = '';
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.dataset.r = i;
-                    cell.dataset.c = j;
-
-                    if (localData.board[i][j] !== 0) {
-                        cell.textContent = localData.board[i][j];
-                        if (localData.board[i][j] === localData.solution[i][j]) {
-                            cell.classList.add('fixed');
-                        }
-                    }
-
-                    cell.onclick = () => selectCell(i, j);
-                    grid.appendChild(cell);
-                }
-            }
-        }
-
-        function selectCell(r, c) {
-            const grid = document.getElementById(`grid${mySlot}`);
-            grid.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
-
-            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-            if (!cell.classList.contains('fixed')) {
-                cell.classList.add('selected');
-                localData.selected = {r, c};
-            }
-        }
-
-        function placeNum(num) {
-            if (!localData.selected || localData.finished) return;
-
-            const {r, c} = localData.selected;
-            localData.board[r][c] = num;
-
-            const grid = document.getElementById(`grid${mySlot}`);
-            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-
-            if (num === localData.solution[r][c]) {
-                localData.score += 10;
-                cell.classList.add('correct');
-                setTimeout(() => cell.classList.remove('correct'), 500);
-            } else {
-                localData.score = Math.max(0, localData.score - 2);
-                cell.classList.add('wrong');
-                setTimeout(() => cell.classList.remove('wrong'), 500);
-            }
-
-            renderGrid();
-            selectCell(r, c);
-            updateProgress();
-        }
-
-        function clearCell() {
-            if (!localData.selected || localData.finished) return;
-            
-            const {r, c} = localData.selected;
-            localData.board[r][c] = 0;
-            renderGrid();
-            selectCell(r, c);
-        }
-
-        function updateProgress() {
-            let completed = 0;
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
-                        completed++;
-                    }
-                }
-            }
-
-            localData.completed = completed;
-
-            if (completed === 81 && !localData.finished) {
-                localData.finished = true;
-                alert('🎉 مبروك! أنهيت اللعبة!');
-            }
-
-            socket.emit('updateProgress', {
-                score: localData.score,
-                completed: localData.completed,
-                finished: localData.finished
-            });
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                const s = (elapsed % 60).toString().padStart(2, '0');
-                document.getElementById('timer').textContent = `${m}:${s}`;
-            }, 1000);
-        }
-
-        // Enter key support
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('playerName').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitName();
-            });
-            document.getElementById('lockInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitLock();
-            });
-        });
-    </script>
-</body>
-</html>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="action-btn reset-btn" onclick="resetAllGames()" style="
