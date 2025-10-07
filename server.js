@@ -12,7 +12,7 @@ const io = socketIO(server, {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Serve static files
 app.use(express.static('public'));
@@ -163,7 +163,7 @@ function getPublicGameState() {
     };
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🎮 Sudoku 4-Player Game Server`);
 });
