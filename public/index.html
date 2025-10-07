@@ -18,37 +18,110 @@
             padding: 15px;
         }
 
-        .login-screen {
+        .screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
 
-        .login-screen.hidden {
-            display: none;
+        .screen.active {
+            display: flex;
         }
 
-        .login-container {
+        .form-container {
             background: white;
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
+            max-width: 450px;
             width: 90%;
             text-align: center;
         }
 
-        .login-container h1 {
+        .form-container h1 {
             color: #667eea;
             margin-bottom: 20px;
             font-size: 2.5em;
+        }
+
+        .form-container p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 18px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102,126,234,0.3);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .waiting-message {
+            background: rgba(255, 235, 59, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #ffeb3b;
+        }
+
+        .waiting-message p {
+            color: #f57f17;
+            font-weight: bold;
+            margin: 0;
         }
 
         .slots-container {
@@ -109,28 +182,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
-        }
-
-        .join-button {
-            background: #667eea;
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .join-button:hover:not(:disabled) {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-
-        .join-button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
         }
 
         .game-screen {
@@ -324,64 +375,17 @@
             background: #673ab7;
         }
 
-        /* Kick Modal */
-        .kick-modal {
+        .error-msg {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
+            background: #f44336;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 15px;
         }
 
-        .kick-modal.show {
-            display: flex;
-        }
-
-        .kick-modal-content {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 400px;
-            animation: slideDown 0.5s;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .kick-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-
-        .kick-modal h2 {
-            color: #f44336;
-            margin-bottom: 15px;
-        }
-
-        .kick-modal p {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 18px;
-        }
-
-        .kick-modal button {
-            background: #667eea;
-            padding: 15px 40px;
-            font-size: 18px;
+        .error-msg.show {
+            display: block;
         }
 
         @media (max-width: 1200px) {
@@ -396,20 +400,74 @@
     </style>
 </head>
 <body>
-    <!-- Kick Modal -->
-    <div class="kick-modal" id="kickModal">
-        <div class="kick-modal-content">
-            <div class="kick-icon">🚫</div>
-            <h2>تم طردك من اللعبة</h2>
-            <p id="kickMessage">تم طردك من قبل المسؤول</p>
-            <button onclick="reloadPage()">العودة للصفحة الرئيسية</button>
+    <!-- Step 1: Enter Name -->
+    <div class="screen active" id="nameScreen">
+        <div class="form-container">
+            <h1>🎮 سودوكو</h1>
+            <p>أدخل اسمك للبدء</p>
+            
+            <div class="input-group">
+                <label>الاسم</label>
+                <input type="text" id="playerName" placeholder="اكتب اسمك هنا..." maxlength="20" />
+            </div>
+
+            <button class="submit-btn" onclick="submitName()">متابعة</button>
+
+            <div class="error-msg" id="nameError"></div>
         </div>
     </div>
 
-    <div class="login-screen" id="loginScreen">
-        <div class="login-container">
-            <h1>🎮 سودوكو - 4 لاعبين</h1>
-            <p>اختر مكانك في اللعبة!</p>
+    <!-- Step 2: Waiting for Lock -->
+    <div class="screen" id="waitingScreen">
+        <div class="form-container">
+            <h1>⏳ انتظر قليلاً</h1>
+            <p>تم إرسال طلبك للمسؤول</p>
+
+            <div class="waiting-message">
+                <p>🔐 جاري الحصول على الرمز السري...</p>
+            </div>
+
+            <div style="margin: 20px 0; color: #666;">
+                <strong>اسمك:</strong> <span id="displayName" style="color: #667eea;"></span>
+            </div>
+
+            <p style="font-size: 14px; color: #999;">
+                سيتم إرسال رمز سري لك من قبل المسؤول
+            </p>
+        </div>
+    </div>
+
+    <!-- Step 3: Enter Lock Code -->
+    <div class="screen" id="lockScreen">
+        <div class="form-container">
+            <h1>🔐 أدخل الرمز</h1>
+            <p>تم إرسال رمزك السري</p>
+
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <p style="color: #2e7d32; margin: 0; font-size: 14px;">
+                    <strong>رمزك السري:</strong>
+                </p>
+                <p style="color: #1b5e20; font-size: 32px; font-weight: bold; margin: 10px 0; font-family: monospace;" id="displayLock">
+                    ****
+                </p>
+            </div>
+
+            <div class="input-group">
+                <label>أدخل الرمز للدخول</label>
+                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 10px; font-size: 24px; font-family: monospace;" />
+            </div>
+
+            <button class="submit-btn" onclick="submitLock()">دخول للعبة</button>
+
+            <div class="error-msg" id="lockError"></div>
+        </div>
+    </div>
+
+    <!-- Step 4: Select Slot -->
+    <div class="screen" id="slotScreen">
+        <div class="form-container">
+            <h1>🎮 اختر موقعك</h1>
+            <p>اختر مكانك في اللعبة</p>
 
             <div class="connection-status">
                 <span class="status-dot"></span>
@@ -418,12 +476,13 @@
 
             <div class="slots-container" id="slotsContainer"></div>
 
-            <button class="join-button" id="joinBtn" disabled>انضم للعبة</button>
+            <button class="submit-btn" id="joinBtn" disabled onclick="joinGame()">انضم للعبة</button>
             
-            <div id="errorMsg" style="display:none; background:#f44336; color:white; padding:10px; border-radius:10px; margin-top:15px;"></div>
+            <div class="error-msg" id="slotError"></div>
         </div>
     </div>
 
+    <!-- Game Screen -->
     <div class="game-screen" id="gameScreen">
         <h1>🎮 سودوكو - 4 لاعبين مباشر 🎮</h1>
         
@@ -447,6 +506,8 @@
         const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
         const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
 
+        let playerName = '';
+        let playerLock = '';
         let mySlot = null;
         let myPlayerId = null;
         let selectedSlot = null;
@@ -468,6 +529,16 @@
             myPlayerId = socket.id;
         });
 
+        socket.on('lockAssigned', (data) => {
+            playerLock = data.lock;
+            document.getElementById('displayLock').textContent = data.lock;
+            showScreen('lockScreen');
+        });
+
+        socket.on('lockError', (msg) => {
+            showError('lockError', msg);
+        });
+
         socket.on('gameState', (state) => {
             updateSlotsUI(state);
             if (mySlot) {
@@ -483,7 +554,7 @@
         });
 
         socket.on('slotError', (msg) => {
-            showError(msg);
+            showError('slotError', msg);
         });
 
         socket.on('resetGame', () => {
@@ -496,27 +567,70 @@
 
         socket.on('playerFinished', (data) => {
             if (data.slot !== mySlot) {
-                showNotification(`${playerEmojis[data.slot-1]} ${playerNames[data.slot-1]} أنهى اللعبة!`);
+                alert(`${playerEmojis[data.slot-1]} ${data.playerName} أنهى اللعبة!`);
             }
         });
 
-        // Admin kicked event
         socket.on('kicked', (data) => {
-            console.log('Kicked by admin:', data);
-            document.getElementById('kickMessage').textContent = data.message || 'تم طردك من قبل المسؤول';
-            document.getElementById('kickModal').classList.add('show');
-            
-            // Stop timer
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
+            alert(data.message || 'تم طردك من قبل المسؤول');
+            location.reload();
         });
 
-        function reloadPage() {
-            location.reload();
+        // Step 1: Submit Name
+        function submitName() {
+            const name = document.getElementById('playerName').value.trim();
+            
+            if (!name || name.length < 2) {
+                showError('nameError', 'الرجاء إدخال اسم صحيح (حرفين على الأقل)');
+                return;
+            }
+
+            playerName = name;
+            document.getElementById('displayName').textContent = name;
+
+            // Request lock from server
+            socket.emit('requestLock', { name: playerName });
+            showScreen('waitingScreen');
+        }
+
+        // Step 2: Submit Lock
+        function submitLock() {
+            const lockInput = document.getElementById('lockInput').value.trim();
+            
+            if (lockInput !== playerLock) {
+                showError('lockError', 'الرمز غير صحيح! حاول مرة أخرى');
+                return;
+            }
+
+            // Lock verified, show slot selection
+            socket.emit('lockVerified', { name: playerName, lock: playerLock });
+            showScreen('slotScreen');
+        }
+
+        // Step 3: Join Game
+        function joinGame() {
+            if (selectedSlot) {
+                socket.emit('requestSlot', { 
+                    slot: selectedSlot, 
+                    name: playerName,
+                    lock: playerLock 
+                });
+            }
         }
 
         // UI Functions
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
         function updateSlotsUI(state) {
             const container = document.getElementById('slotsContainer');
             container.innerHTML = '';
@@ -525,13 +639,14 @@
             const takenSlots = Object.values(state.players).map(p => p.slot);
 
             for (let i = 1; i <= 4; i++) {
+                const player = Object.values(state.players).find(p => p.slot === i);
                 const div = document.createElement('div');
                 const isTaken = takenSlots.includes(i);
                 
                 div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
                 div.innerHTML = `
                     <div class="slot-emoji">${playerEmojis[i-1]}</div>
-                    <div class="slot-status">${playerNames[i-1]}</div>
+                    <div class="slot-status">${player ? player.name : playerNames[i-1]}</div>
                     <div class="slot-name">${isTaken ? '🔒 محجوز' : 'متاح'}</div>
                 `;
 
@@ -561,7 +676,7 @@
                     section.innerHTML = `
                         <div class="player-header header${i}">
                             <div>
-                                ${playerEmojis[i-1]} ${playerNames[i-1]}
+                                ${playerEmojis[i-1]} ${player.name}
                                 ${isMe ? '<span style="background:rgba(255,215,0,0.3); padding:2px 8px; border-radius:10px; font-size:11px; margin-right:5px;">أنت</span>' : ''}
                             </div>
                             <div>${player.score} نقطة</div>
@@ -593,16 +708,10 @@
             if (mySlot) renderGrid();
         }
 
-        document.getElementById('joinBtn').onclick = () => {
-            if (selectedSlot) {
-                socket.emit('requestSlot', selectedSlot);
-            }
-        };
-
         function showGame() {
-            document.getElementById('loginScreen').classList.add('hidden');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('gameScreen').classList.add('active');
-            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerNames[mySlot-1]}`;
+            document.getElementById('myInfo').innerHTML = `أنت: ${playerEmojis[mySlot-1]} ${playerName}`;
         }
 
         function leaveGame() {
@@ -613,17 +722,6 @@
 
         function requestNewGame() {
             socket.emit('newGame');
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('errorMsg');
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
-        }
-
-        function showNotification(msg) {
-            alert(msg);
         }
 
         // Sudoku Logic
@@ -771,39 +869,4 @@
         }
 
         function updateProgress() {
-            let completed = 0;
-            for (let i = 0; i < 9; i++) {
-                for (let j = 0; j < 9; j++) {
-                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
-                        completed++;
-                    }
-                }
-            }
-
-            localData.completed = completed;
-
-            if (completed === 81 && !localData.finished) {
-                localData.finished = true;
-                alert('🎉 مبروك! أنهيت اللعبة!');
-            }
-
-            socket.emit('updateProgress', {
-                score: localData.score,
-                completed: localData.completed,
-                finished: localData.finished
-            });
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                const s = (elapsed % 60).toString().padStart(2, '0');
-                document.getElementById('timer').textContent = `${m}:${s}`;
-            }, 1000);
-        }
-    </script>
-</body>
-</html>
+            let completed = 0
