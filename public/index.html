@@ -3,35 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سودوكو - 4 لاعبين مباشر PRO</title>
+    <title>سودوكو PRO - 4 لاعبين مباشر</title>
     <style>
-        /* ===== GLOBAL RESET & VARIABLES ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
+            --primary: #2563eb;
+            --secondary: #1e40af;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
             --dark: #1f2937;
             --light: #f9fafb;
+            --game-bg: #ffffff;
             --grid-border: #2c3e50;
-            --cell-size: 45px;
+            --cell-bg: #ffffff;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #ffffff;
-            color: #333;
+            background: var(--game-bg);
             min-height: 100vh;
             padding: 15px;
             position: relative;
             overflow-x: hidden;
         }
-        .screen, .game-screen {
+        body.lobby-mode {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0;
+        }
+        body.lobby-mode::before {
+            opacity: 1;
+        }
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0;
+        }
+        body.lobby-mode .particles {
+            opacity: 1;
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: float 15s infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+        }
+        .screen {
             position: fixed;
             top: 0;
             left: 0;
@@ -47,311 +92,673 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        .screen.active, .game-screen.active {
+        .screen.active {
             display: flex;
         }
         .form-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            padding: 40px;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 45px;
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
             max-width: 500px;
             width: 90%;
             text-align: center;
             position: relative;
+            animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 1;
         }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 25px;
+            z-index: -1;
+            animation: gradientRotate 3s linear infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
         .form-container h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 15px;
-            font-size: 2.5em;
-            color: #2c3e50;
+            font-size: 2.8em;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         .form-container p {
             color: #666;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
+            font-size: 17px;
+        }
+        /* Difficulty Selection */
+        .difficulty-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 25px 0;
+        }
+        .difficulty-option {
+            padding: 18px 12px;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            text-align: center;
+        }
+        .difficulty-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .difficulty-option.selected {
+            border-color: var(--primary);
+            background: #e3f2fd;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(37,99,235,0.5);
+        }
+        .difficulty-label {
+            font-weight: bold;
             font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .difficulty-desc {
+            font-size: 12px;
+            color: #666;
         }
         /* Avatar Selection */
         .avatars-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin: 20px 0;
+            gap: 15px;
+            margin: 25px 0;
         }
         .avatar-option {
-            font-size: 42px;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            font-size: 48px;
+            padding: 15px;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
             cursor: pointer;
-            background: #f8f9fa;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            background: white;
+            position: relative;
         }
         .avatar-option:hover {
-            transform: scale(1.08);
+            transform: scale(1.1);
             border-color: var(--primary);
         }
         .avatar-option.selected {
             border-color: var(--primary);
             background: #e3f2fd;
-            transform: scale(1.12);
-            box-shadow: 0 0 15px rgba(102,126,234,0.4);
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(37,99,235,0.5);
         }
-        /* Difficulty */
-        .difficulty-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .difficulty-option {
-            padding: 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            cursor: pointer;
-            background: #f8f9fa;
+        .avatar-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
             font-weight: bold;
-            transition: all 0.2s;
         }
-        .difficulty-option:hover {
-            transform: scale(1.05);
-        }
-        .difficulty-option.selected {
-            transform: scale(1.08);
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-        }
-        /* Input & Buttons */
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: right;
         }
         .input-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: #333;
             font-weight: bold;
+            font-size: 16px;
         }
         .input-group input {
             width: 100%;
-            padding: 16px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            font-size: 17px;
+            padding: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 18px;
+            transition: all 0.3s;
             text-align: center;
+            background: #f8f9fa;
         }
         .input-group input:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(37,99,235,0.3);
             background: white;
+            transform: translateY(-2px);
         }
         .submit-btn {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 17px;
+            border-radius: 15px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
+            transition: all 0.3s;
             margin-top: 10px;
-        }
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102,126,234,0.3);
-        }
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        /* Game Screen */
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 2.2em;
-        }
-        .game-info {
-            background: white;
-            padding: 20px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-        }
-        .timer {
-            font-size: 36px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .mistakes-counter {
-            background: #ffebee;
-            color: #c62828;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .weekly-score {
-            background: #fff8e1;
-            color: #ff6f00;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .tools {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-        .tool-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: none;
-            background: #f1f3f5;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-        }
-        .tool-btn:hover {
-            transform: scale(1.1);
-            background: #e0e0e0;
-        }
-        .tool-btn.hint { background: #e8f5e9; color: #2e7d32; }
-        .tool-btn.undo { background: #e3f2fd; color: #1976d2; }
-        .tool-btn.eraser { background: #ffebee; color: #c62828; }
-        .tool-btn.notes { background: #fff8e1; color: #ff6f00; }
-        /* Grid */
-        .grids-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .player-section {
-            background: white;
-            padding: 20px;
-            border-radius: 18px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
             position: relative;
-        }
-        .player-section.me {
-            border: 3px solid gold;
-            box-shadow: 0 0 25px rgba(255,215,0,0.3);
-        }
-        .player-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            color: white;
-            font-weight: bold;
-            font-size: 17px;
-        }
-        .header1 { background: linear-gradient(135deg, #f44336, #e91e63); }
-        .header2 { background: linear-gradient(135deg, #4caf50, #8bc34a); }
-        .header3 { background: linear-gradient(135deg, #ff9800, #ffc107); color: #333; }
-        .header4 { background: linear-gradient(135deg, #9c27b0, #673ab7); }
-        .player-badge {
-            font-size: 12px;
-            padding: 3px 10px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.3);
-            margin-right: 8px;
-        }
-        .completion-bar {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            margin: 12px 0;
             overflow: hidden;
         }
-        .completion-fill {
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .submit-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(37,99,235,0.4);
+        }
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+        .submit-btn:disabled {
+            background: linear-gradient(135deg, #ccc, #999);
+            cursor: not-allowed;
+            transform: none;
+        }
+        .waiting-message {
+            background: linear-gradient(135deg, rgba(255,235,59,0.2), rgba(255,193,7,0.2));
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border: 2px solid rgba(245,158,11,0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .waiting-message p {
+            color: #f57f17;
+            font-weight: bold;
+            margin: 0;
+        }
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            margin: 35px 0;
+        }
+        .slot-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .slot-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, #4caf50, #8bc34a);
-            transition: width 0.4s;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        .slot-card:hover::before {
+            left: 100%;
+        }
+        .slot-card:hover:not(.taken) {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .slot-card.taken {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .slot-card.selected {
+            border-color: #2196f3;
+            box-shadow: 0 0 30px rgba(33,150,243,0.8);
+            transform: scale(1.05);
+        }
+        .slot-emoji {
+            font-size: 56px;
+            margin-bottom: 12px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .connection-status {
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 15px;
+            color: white;
+            margin: 25px 0;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            background: #10b981;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px #10b981;
+        }
+        /* Game Screen */
+        .game-screen {
+            display: none;
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .game-screen.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        .game-header {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .game-header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .game-stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .stat-icon {
+            font-size: 24px;
+        }
+        .game-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 20px;
+            align-items: start;
+        }
+        /* Left Sidebar - Player Stats */
+        .sidebar {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .sidebar h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .player-mini-card {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .player-mini-card.me {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            box-shadow: 0 0 20px rgba(251,191,36,0.3);
+        }
+        .player-mini-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .player-mini-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .player-mini-avatar {
+            font-size: 24px;
+            position: relative;
+        }
+        .player-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            font-size: 12px;
+            background: white;
+            border-radius: 50%;
+            padding: 2px;
+        }
+        .player-mini-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1f2937;
+        }
+        .player-rank {
+            font-size: 20px;
+        }
+        .player-mini-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        .mini-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .mini-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: width 0.5s;
+        }
+        /* Main Game Area */
+        .game-main {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .game-tools {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .tool-btn {
+            padding: 12px 20px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .tool-btn:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+        .tool-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        .tool-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .tool-icon {
+            font-size: 18px;
+        }
+        .mistakes-counter {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #991b1b;
+            border: 2px solid #fca5a5;
+        }
+        .mistakes-counter.critical {
+            animation: shake 0.5s;
+        }
+        /* Sudoku Grid */
+        .grid-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(9, var(--cell-size));
+            grid-template-columns: repeat(9, 1fr);
             gap: 0;
-            margin: 15px auto;
-            border: 3px solid var(--grid-border);
+            border: 4px solid var(--grid-border);
             background: var(--grid-border);
-            border-radius: 6px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border-radius: 8px;
             overflow: hidden;
         }
         .cell {
-            width: var(--cell-size);
-            height: var(--cell-size);
+            width: 50px;
+            height: 50px;
+            border: 1px solid #cbd5e1;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
-            background: white;
+            background: var(--cell-bg);
             cursor: pointer;
+            transition: all 0.2s;
             position: relative;
-            color: #1a1a1a;
-            border: 1px solid #ddd;
+            color: var(--primary);
         }
-        .cell:hover:not(.fixed) {
-            background: #f5f5f5;
+        .cell:nth-child(3n):not(:nth-child(9n)) {
+            border-left: 3px solid var(--grid-border);
+        }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 3px solid var(--grid-border);
+        }
+        .cell:hover:not(.fixed):not(.error-cell) {
+            background: #eff6ff;
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 5px 20px rgba(37,99,235,0.3);
         }
         .cell.fixed {
-            background: #1a1a1a;
-            color: white;
+            background: #f1f5f9;
+            color: #1e293b;
             cursor: default;
             font-weight: 900;
         }
         .cell.selected {
-            background: #bbdefb;
-            box-shadow: inset 0 0 0 2px #2196f3;
+            background: #dbeafe;
+            box-shadow: inset 0 0 0 3px var(--primary);
+            z-index: 10;
         }
         .cell.correct {
-            background: #e8f5e9;
-            color: #2e7d32;
+            animation: correctPulse 0.6s;
         }
         .cell.wrong {
-            background: #ffebee;
-            color: #c62828;
+            animation: shake 0.4s;
         }
-        .number-pad {
+        .cell.error-cell {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .cell.highlighted {
+            background: #fef3c7;
+        }
+        .cell-notes {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 20px;
+            gap: 1px;
+            font-size: 10px;
+            color: #9ca3af;
+            font-weight: normal;
+            position: absolute;
+            inset: 2px;
+        }
+        .cell-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.2); box-shadow: 0 0 30px rgba(16,185,129,0.8); }
+            50% { transform: scale(1.15); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+        /* Number Pad */
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-top: 25px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .num-btn {
-            padding: 16px;
-            font-size: 22px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            background: #f1f3f5;
+            padding: 18px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            font-weight: bold;
+            color: #1e293b;
         }
         .num-btn:hover {
-            background: #e0e0e0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(37,99,235,0.4);
         }
-        /* Victory Screen */
-        .victory-screen {
+        .num-btn:active {
+            transform: translateY(-1px);
+        }
+        /* Right Sidebar - Mini Grids */
+        .mini-grids {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .mini-grids h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #1f2937;
+            text-align: center;
+        }
+        .mini-grid-container {
+            margin-bottom: 20px;
+        }
+        .mini-grid-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .mini-grid-player {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 0;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+        .mini-cell {
+            width: 20px;
+            height: 20px;
+            border: 0.5px solid #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 600;
+            background: white;
+            color: #6b7280;
+        }
+        .mini-cell.filled {
+            background: #dbeafe;
+            color: var(--primary);
+        }
+        .mini-cell.fixed {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        /* Victory Modal */
+        .victory-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -361,261 +768,634 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 5000;
+            z-index: 10000;
+            animation: fadeIn 0.5s;
+        }
+        .victory-modal.show {
+            display: flex;
         }
         .victory-content {
             background: white;
-            border-radius: 25px;
-            padding: 40px;
+            padding: 50px;
+            border-radius: 30px;
             max-width: 600px;
             width: 90%;
             text-align: center;
             position: relative;
+            animation: victoryPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes victoryPop {
+            from { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+            to { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        .victory-trophy {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: trophySpin 1s ease-in-out;
+        }
+        @keyframes trophySpin {
+            0% { transform: rotate(0deg) scale(0); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
         }
         .victory-title {
-            font-size: 2.8em;
-            color: gold;
+            font-size: 3em;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255,215,0,0.6);
+            font-weight: 900;
         }
-        .final-leaderboard {
+        .victory-podium {
             display: flex;
             justify-content: center;
+            align-items: flex-end;
             gap: 20px;
             margin: 30px 0;
         }
-        .final-rank {
+        .podium-place {
             text-align: center;
-            padding: 15px;
-            border-radius: 15px;
-            min-width: 120px;
+            transition: all 0.3s;
         }
-        .rank-1 { background: linear-gradient(to bottom, #ffd700, #ffed4e); }
-        .rank-2 { background: linear-gradient(to bottom, #c0c0c0, #e8e8e8); }
-        .rank-3 { background: linear-gradient(to bottom, #cd7f32, #e39b5f); }
-        .final-avatar {
+        .podium-place:hover {
+            transform: translateY(-5px);
+        }
+        .podium-avatar {
             font-size: 48px;
             margin-bottom: 10px;
         }
-        .final-name {
+        .podium-platform {
+            padding: 20px 30px;
+            border-radius: 15px;
             font-weight: bold;
-            font-size: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .final-stats {
+        .podium-place.first .podium-platform {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: 3px solid #ffa000;
+            height: 120px;
+        }
+        .podium-place.second .podium-platform {
+            background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+            border: 3px solid #9e9e9e;
+            height: 90px;
+        }
+        .podium-place.third .podium-platform {
+            background: linear-gradient(135deg, #cd7f32, #e39b5f);
+            border: 3px solid #a0522d;
+            height: 70px;
+        }
+        .podium-medal {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .podium-name {
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        .podium-score {
             font-size: 14px;
-            margin-top: 5px;
-            color: #555;
+            color: #6b7280;
         }
-        .share-btn {
+        .victory-stats {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        .victory-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .victory-stat-row:last-child {
+            border-bottom: none;
+        }
+        .victory-buttons {
+            display: flex;
+            gap: 15px;
             margin-top: 25px;
-            padding: 12px 30px;
-            background: #10b981;
-            color: white;
+        }
+        .victory-btn {
+            flex: 1;
+            padding: 15px;
             border: none;
             border-radius: 12px;
-            font-size: 17px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s;
         }
-        /* Toast */
+        .victory-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        .victory-btn.secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        .victory-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        /* Chat System */
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            z-index: 2000;
+            overflow: hidden;
+        }
+        .chat-container.open {
+            display: flex;
+            animation: slideInUp 0.3s;
+        }
+        @keyframes slideInUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .chat-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 350px;
+        }
+        .chat-message {
+            margin-bottom: 12px;
+            animation: messageSlide 0.3s;
+        }
+        @keyframes messageSlide {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .chat-message.me {
+            text-align: left;
+        }
+        .chat-message.other {
+            text-align: right;
+        }
+        .message-bubble {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .chat-message.me .message-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .chat-message.other .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .message-sender {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sender-avatar {
+            font-size: 16px;
+        }
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+        .chat-input:focus {
+            border-color: #10b981;
+        }
+        .chat-send {
+            background: linear-gradient(135deg, #10b981, #059669);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        /* Toast Notification */
         .toast {
             position: fixed;
             top: 20px;
             right: 20px;
             background: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             display: none;
+            align-items: center;
+            gap: 15px;
             z-index: 10000;
+            animation: slideInRight 0.5s;
+            max-width: 350px;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         .toast.show {
-            display: block;
+            display: flex;
         }
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .grids-container { grid-template-columns: 1fr; }
+        .toast.success { border-right: 5px solid #10b981; }
+        .toast.error { border-right: 5px solid #ef4444; }
+        .toast.info { border-right: 5px solid #3b82f6; }
+        .toast-icon {
+            font-size: 32px;
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            animation: confettiFall 3s linear forwards;
+        }
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar, .mini-grids {
+                display: none;
+            }
         }
         @media (max-width: 768px) {
-            :root { --cell-size: 38px; }
-            .final-leaderboard { flex-direction: column; align-items: center; }
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+            .number-pad {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            .num-btn {
+                padding: 12px;
+                font-size: 20px;
+            }
+            .form-container {
+                padding: 30px 20px;
+            }
+            .chat-container {
+                width: 90%;
+                right: 5%;
+            }
+            .game-main {
+                padding: 15px;
+            }
         }
     </style>
 </head>
-<body>
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
-
-    <!-- Victory Screen -->
-    <div class="victory-screen" id="victoryScreen">
+<body class="lobby-mode">
+    <div class="particles" id="particles"></div>
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-icon" id="toastIcon">✅</div>
+        <div id="toastMessage"></div>
+    </div>
+    <!-- Victory Modal -->
+    <div class="victory-modal" id="victoryModal">
         <div class="victory-content">
-            <div class="victory-title">🏆 انتهى اللعبة!</div>
-            <p>النتائج النهائية:</p>
-            <div class="final-leaderboard" id="finalLeaderboard"></div>
-            <button class="share-btn" onclick="shareResult()">مشاركة النتيجة</button>
+            <div class="victory-trophy">🏆</div>
+            <h1 class="victory-title">اللعبة انتهت!</h1>
+            <div class="victory-podium" id="victoryPodium"></div>
+            <div class="victory-stats" id="victoryStats"></div>
+            <div class="victory-buttons">
+                <button class="victory-btn primary" onclick="closeVictoryModal()">حسناً</button>
+                <button class="victory-btn secondary" onclick="shareResults()">📤 مشاركة</button>
+            </div>
         </div>
     </div>
-
-    <!-- Step 1: Name, Avatar & Difficulty -->
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <span>💬 المحادثة</span>
+            <button class="chat-close" onclick="toggleChat()">×</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالة..." maxlength="100" />
+            <button class="chat-send" onclick="sendMessage()">إرسال</button>
+        </div>
+    </div>
+    <!-- Step 1: Enter Name, Avatar & Difficulty -->
     <div class="screen active" id="nameScreen">
         <div class="form-container">
-            <h1>🎮 سودوكو</h1>
-            <p>أدخل اسمك، اختر صورتك ومستوى الصعوبة</p>
+            <h1>🎮 سودوكو PRO</h1>
+            <p>أدخل معلوماتك واختر المستوى</p>
             <div class="input-group">
                 <label>الاسم</label>
                 <input type="text" id="playerName" placeholder="اكتب اسمك هنا..." maxlength="20" />
             </div>
             <div class="input-group">
-                <label>اختر صورتك الرمزية</label>
-                <div class="avatars-grid" id="avatarsGrid">
-                    <div class="avatar-option selected" data-avatar="😎">😎</div>
-                    <div class="avatar-option" data-avatar="🤓">🤓</div>
-                    <div class="avatar-option" data-avatar="🥳">🥳</div>
-                    <div class="avatar-option" data-avatar="🤩">🤩</div>
-                    <div class="avatar-option" data-avatar="😺">😺</div>
-                    <div class="avatar-option" data-avatar="🦁">🦁</div>
-                    <div class="avatar-option" data-avatar="🐼">🐼</div>
-                    <div class="avatar-option" data-avatar="🦊">🦊</div>
-                    <div class="avatar-option" data-avatar="🐯">🐯</div>
-                    <div class="avatar-option" data-avatar="🦄">🦄</div>
-                    <div class="avatar-option" data-avatar="🐉">🐉</div>
-                    <div class="avatar-option" data-avatar="🤖">🤖</div>
+                <label>اختر مستوى الصعوبة</label>
+                <div class="difficulty-selector" id="difficultySelector">
+                    <div class="difficulty-option selected" data-level="easy" onclick="selectDifficulty('easy')">
+                        <div class="difficulty-label" style="color: #4caf50;">🟢 سهل</div>
+                        <div class="difficulty-desc">35 خلية فارغة</div>
+                    </div>
+                    <div class="difficulty-option" data-level="medium" onclick="selectDifficulty('medium')">
+                        <div class="difficulty-label" style="color: #2196f3;">🔵 متوسط</div>
+                        <div class="difficulty-desc">45 خلية فارغة</div>
+                    </div>
+                    <div class="difficulty-option" data-level="hard" onclick="selectDifficulty('hard')">
+                        <div class="difficulty-label" style="color: #ff9800;">🟠 صعب</div>
+                        <div class="difficulty-desc">50 خلية فارغة</div>
+                    </div>
+                    <div class="difficulty-option" data-level="expert" onclick="selectDifficulty('expert')">
+                        <div class="difficulty-label" style="color: #f44336;">🔴 خبير</div>
+                        <div class="difficulty-desc">55 خلية فارغة</div>
+                    </div>
+                    <div class="difficulty-option" data-level="master" onclick="selectDifficulty('master')">
+                        <div class="difficulty-label" style="color: #9c27b0;">🟣 ماستر</div>
+                        <div class="difficulty-desc">60 خلية فارغة</div>
+                    </div>
+                    <div class="difficulty-option" data-level="extreme" onclick="selectDifficulty('extreme')">
+                        <div class="difficulty-label" style="color: #000;">⚫ قاسي</div>
+                        <div class="difficulty-desc">65 خلية فارغة</div>
+                    </div>
                 </div>
             </div>
             <div class="input-group">
-                <label>اختر مستوى الصعوبة</label>
-                <div class="difficulty-grid" id="difficultyGrid"></div>
+                <label>اختر صورتك الرمزية</label>
+                <div class="avatars-grid" id="avatarsGrid">
+                    <div class="avatar-option selected" data-avatar="😎" onclick="selectAvatar('😎')">😎</div>
+                    <div class="avatar-option" data-avatar="🤓" onclick="selectAvatar('🤓')">🤓</div>
+                    <div class="avatar-option" data-avatar="🥳" onclick="selectAvatar('🥳')">🥳</div>
+                    <div class="avatar-option" data-avatar="🤩" onclick="selectAvatar('🤩')">🤩</div>
+                    <div class="avatar-option" data-avatar="😺" onclick="selectAvatar('😺')">😺</div>
+                    <div class="avatar-option" data-avatar="🦁" onclick="selectAvatar('🦁')">🦁</div>
+                    <div class="avatar-option" data-avatar="🐼" onclick="selectAvatar('🐼')">🐼</div>
+                    <div class="avatar-option" data-avatar="🦊" onclick="selectAvatar('🦊')">🦊</div>
+                    <div class="avatar-option" data-avatar="🐯" onclick="selectAvatar('🐯')">🐯</div>
+                    <div class="avatar-option" data-avatar="🦄" onclick="selectAvatar('🦄')">🦄</div>
+                    <div class="avatar-option" data-avatar="🐉" onclick="selectAvatar('🐉')">🐉</div>
+                    <div class="avatar-option" data-avatar="🤖" onclick="selectAvatar('🤖')">🤖</div>
+                </div>
             </div>
             <button class="submit-btn" onclick="submitName()">متابعة ←</button>
         </div>
     </div>
-
-    <!-- Other screens (waiting, lock, slot) remain similar -->
+    <!-- Step 2: Waiting for Lock -->
     <div class="screen" id="waitingScreen">
         <div class="form-container">
             <h1>⏳ انتظر قليلاً</h1>
             <p>تم إرسال طلبك للمسؤول</p>
-            <div style="margin: 25px 0; color: #666;">
-                <div style="font-size: 42px; margin-bottom: 10px;" id="displayAvatarWaiting"></div>
-                <strong>اسمك:</strong> <span id="displayName"></span>
+            <div class="waiting-message">
+                <p>🔐 جاري الحصول على الرمز السري...</p>
             </div>
+            <div style="margin: 25px 0; color: #666; font-size: 18px;">
+                <div style="font-size: 48px; margin-bottom: 10px;" id="displayAvatarWaiting"></div>
+                <strong>اسمك:</strong> <span id="displayName" style="color: #667eea; font-size: 20px;"></span>
+            </div>
+            <p style="font-size: 14px; color: #999;">
+                سيتم إرسال رمز سري لك من قبل المسؤول
+            </p>
         </div>
     </div>
-
+    <!-- Step 3: Enter Lock Code -->
     <div class="screen" id="lockScreen">
         <div class="form-container">
             <h1>🔐 أدخل الرمز</h1>
             <p>تم إرسال رمزك السري</p>
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                <p style="color: #2e7d32;"><strong>رمزك السري:</strong></p>
-                <p style="color: #1b5e20; font-size: 36px; font-weight: bold; font-family: monospace;" id="displayLock">****</p>
+            <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); padding: 25px; border-radius: 15px; margin: 25px 0;">
+                <p style="color: #2e7d32; margin: 0; font-size: 15px;">
+                    <strong>رمزك السري:</strong>
+                </p>
+                <p style="color: #1b5e20; font-size: 42px; font-weight: bold; margin: 15px 0; font-family: monospace; letter-spacing: 8px;" id="displayLock">
+                    ****
+                </p>
             </div>
             <div class="input-group">
                 <label>أدخل الرمز للدخول</label>
-                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 15px; font-size: 24px; font-family: monospace;" />
+                <input type="text" id="lockInput" placeholder="****" maxlength="4" style="letter-spacing: 15px; font-size: 28px; font-family: monospace;" />
             </div>
             <button class="submit-btn" onclick="submitLock()">دخول للعبة 🚀</button>
         </div>
     </div>
-
+    <!-- Step 4: Select Slot -->
     <div class="screen" id="slotScreen">
         <div class="form-container">
             <h1>🎮 اختر موقعك</h1>
             <p>اختر مكانك في اللعبة</p>
-            <div style="color: #666; margin: 15px 0;">اللاعبين المتصلين: <span id="onlineCount">0</span>/4</div>
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                متصل بالسيرفر | <span id="onlineCount">0</span>/4 لاعبين
+            </div>
             <div class="slots-container" id="slotsContainer"></div>
             <button class="submit-btn" id="joinBtn" disabled onclick="joinGame()">انضم للعبة 🎯</button>
         </div>
     </div>
-
     <!-- Game Screen -->
     <div class="game-screen" id="gameScreen">
-        <h1>🎮 سودوكو - 4 لاعبين مباشر 🎮</h1>
-        <div class="game-info">
-            <div id="myInfo"></div>
-            <div class="timer" id="timer">00:00</div>
-            <div class="mistakes-counter" id="mistakesCounter">الأخطاء: 0/3</div>
-            <div class="weekly-score">هذا الأسبوع: ❤️ 30300</div>
-            <div class="tools">
-                <button class="tool-btn undo" title="تراجع" onclick="undoMove()">↩️</button>
-                <button class="tool-btn notes" title="ملاحظات" onclick="toggleNotes()">📝</button>
-                <button class="tool-btn eraser" title="مسح" onclick="clearCell()">🧹</button>
-                <button class="tool-btn hint" title="مساعدة (3)" onclick="useHint()">💡</button>
+        <div class="game-header">
+            <h1>🎮 سودوكو PRO - 4 لاعبين مباشر 🎮</h1>
+            <div class="game-stats-bar">
+                <div class="stat-item">
+                    <span class="stat-icon" id="myAvatarHeader">😎</span>
+                    <span id="myNameHeader">لاعب</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⏱️</span>
+                    <span id="timer">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⭐</span>
+                    <span id="myScoreHeader">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">📊</span>
+                    <span id="myProgressHeader">0/81</span>
+                </div>
             </div>
         </div>
-        <div class="grids-container" id="gridsContainer"></div>
+        <div class="game-container">
+            <!-- Left Sidebar -->
+            <div class="sidebar">
+                <h3>🏆 المتصدرون</h3>
+                <div id="playersList"></div>
+            </div>
+            <!-- Main Game Area -->
+            <div class="game-main">
+                <div class="game-tools">
+                    <button class="tool-btn" id="undoBtn" onclick="undoMove()" disabled>
+                        <span class="tool-icon">↩️</span>
+                        <span>تراجع</span>
+                    </button>
+                    <button class="tool-btn" id="notesBtn" onclick="toggleNotes()">
+                        <span class="tool-icon">✏️</span>
+                        <span>ملاحظات</span>
+                    </button>
+                    <button class="tool-btn" id="eraserBtn" onclick="toggleEraser()">
+                        <span class="tool-icon">🗑️</span>
+                        <span>مسح</span>
+                    </button>
+                    <button class="tool-btn" id="hintBtn" onclick="useHint()">
+                        <span class="tool-icon">💡</span>
+                        <span>مساعدة (<span id="hintsLeft">3</span>)</span>
+                    </button>
+                    <div class="mistakes-counter" id="mistakesCounter">
+                        ❌ أخطاء: <span id="mistakesCount">0</span>/3
+                    </div>
+                    <button class="tool-btn chat-btn" onclick="toggleChat()" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                        <span class="tool-icon">💬</span>
+                        <span>دردشة</span>
+                    </button>
+                </div>
+                <div class="grid-wrapper">
+                    <div class="grid" id="mainGrid"></div>
+                </div>
+                <div class="number-pad">
+                    <button class="num-btn" onclick="placeNum(1)">1</button>
+                    <button class="num-btn" onclick="placeNum(2)">2</button>
+                    <button class="num-btn" onclick="placeNum(3)">3</button>
+                    <button class="num-btn" onclick="placeNum(4)">4</button>
+                    <button class="num-btn" onclick="placeNum(5)">5</button>
+                    <button class="num-btn" onclick="placeNum(6)">6</button>
+                    <button class="num-btn" onclick="placeNum(7)">7</button>
+                    <button class="num-btn" onclick="placeNum(8)">8</button>
+                    <button class="num-btn" onclick="placeNum(9)">9</button>
+                    <button class="num-btn" onclick="clearCell()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">❌</button>
+                </div>
+            </div>
+            <!-- Right Sidebar -->
+            <div class="mini-grids">
+                <h3>📊 ألواح اللاعبين</h3>
+                <div id="miniGridsContainer"></div>
+            </div>
+        </div>
     </div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // ===== Difficulty Config =====
+        // ===== Configuration =====
         const DIFFICULTIES = {
             easy: { empty: 35, name: 'سهل', color: '#4caf50' },
             medium: { empty: 45, name: 'متوسط', color: '#2196f3' },
             hard: { empty: 50, name: 'صعب', color: '#ff9800' },
             expert: { empty: 55, name: 'خبير', color: '#f44336' },
             master: { empty: 60, name: 'ماستر', color: '#9c27b0' },
-            extreme: { empty: 65, name: 'إكستريم', color: '#000' }
+            extreme: { empty: 65, name: 'قاسي', color: '#000' }
         };
-        let selectedDifficulty = 'medium';
-
-        // ===== Badge System =====
-        const BADGES = [
-            { min: 0, name: 'مبتدئ', icon: '🌟' },
-            { min: 11, name: 'متوسط', icon: '⭐' },
-            { min: 51, name: 'خبير', icon: '💎' },
-            { min: 101, name: 'ماستر', icon: '👑' }
-        ];
-        function getPlayerBadge(gamesPlayed = 0) {
-            for (let i = BADGES.length - 1; i >= 0; i--) {
-                if (gamesPlayed >= BADGES[i].min) return BADGES[i];
+        const BADGES = {
+            beginner: { icon: '🌟', name: 'مبتدئ', minGames: 0 },
+            intermediate: { icon: '⭐', name: 'متوسط', minGames: 10 },
+            expert: { icon: '💎', name: 'خبير', minGames: 50 },
+            master: { icon: '👑', name: 'ماستر', minGames: 100 }
+        };
+        // ===== Particles Animation =====
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                container.appendChild(particle);
             }
-            return BADGES[0];
         }
-
-        // ===== Initial Setup =====
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load avatars
-            document.querySelectorAll('.avatar-option').forEach(el => {
-                el.onclick = () => {
-                    document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
-                    el.classList.add('selected');
-                    selectedAvatar = el.dataset.avatar;
-                };
-            });
-
-            // Load difficulties
-            const diffGrid = document.getElementById('difficultyGrid');
-            Object.entries(DIFFICULTIES).forEach(([key, diff]) => {
-                const div = document.createElement('div');
-                div.className = `difficulty-option ${key === selectedDifficulty ? 'selected' : ''}`;
-                div.textContent = diff.name;
-                div.style.borderColor = diff.color;
-                div.onclick = () => {
-                    document.querySelectorAll('.difficulty-option').forEach(d => d.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedDifficulty = key;
-                };
-                diffGrid.appendChild(div);
-            });
-        });
-
-        // ===== Existing Game Logic (Simplified for brevity) =====
+        createParticles();
+        // ===== Toast Notification =====
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            toast.className = 'toast show ' + type;
+            if (type === 'success') icon.textContent = '✅';
+            else if (type === 'error') icon.textContent = '❌';
+            else icon.textContent = 'ℹ️';
+            msg.textContent = message;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        // ===== Confetti Effect =====
+        function createConfetti() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+        // ===== Selection Functions =====
         let selectedAvatar = '😎';
+        let selectedDifficulty = 'easy';
+        function selectAvatar(avatar) {
+            selectedAvatar = avatar;
+            document.querySelectorAll('.avatar-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-avatar="${avatar}"]`).classList.add('selected');
+        }
+        function selectDifficulty(level) {
+            selectedDifficulty = level;
+            document.querySelectorAll('.difficulty-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-level="${level}"]`).classList.add('selected');
+        }
+        // ===== Socket & Game State =====
+        const socket = io();
+        const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
+        const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
         let playerName = '';
         let playerLock = '';
         let mySlot = null;
         let myPlayerId = null;
+        let selectedSlot = null;
         let startTime = null;
         let timerInterval = null;
-        let mistakes = 0;
-        let hintsUsed = 0;
-        let notesMode = false;
-        let moveHistory = [];
-
-        const socket = io();
-        const playerEmojis = ['🔴', '🟢', '🟡', '🟣'];
-        const playerNames = ['لاعب 1', 'لاعب 2', 'لاعب 3', 'لاعب 4'];
-
         const localData = {
             board: [],
             solution: [],
@@ -623,50 +1403,267 @@
             score: 0,
             completed: 0,
             finished: false,
-            avatar: '😎'
+            avatar: '😎',
+            difficulty: 'easy',
+            mistakes: 0,
+            hints: 3,
+            notesMode: false,
+            eraserMode: false,
+            history: [],
+            notes: {},
+            gamesPlayed: 0
         };
-
-        // ===== Socket Events (partial) =====
-        socket.on('connect', () => console.log('Connected'));
+        // ===== Socket Events =====
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            myPlayerId = socket.id;
+            showToast('تم الاتصال بالسيرفر بنجاح', 'success');
+        });
         socket.on('lockAssigned', (data) => {
             playerLock = data.lock;
             document.getElementById('displayLock').textContent = data.lock;
             showScreen('lockScreen');
+            showToast('تم إرسال الرمز السري لك', 'success');
+        });
+        socket.on('lockError', (msg) => {
+            showToast(msg, 'error');
+        });
+        socket.on('gameState', (state) => {
+            updateSlotsUI(state);
+            if (mySlot) {
+                updatePlayersList(state);
+                updateMiniGrids(state);
+            }
         });
         socket.on('slotAssigned', (data) => {
             mySlot = data.slot;
             showGame();
             generateBoard();
             startTimer();
+            showToast('تم الانضمام للعبة بنجاح! 🎮', 'success');
         });
-        socket.on('gameState', (state) => {
-            updateSlotsUI(state);
-            if (mySlot) {
-                updateGameUI(state);
-                updateLeaderboard(state);
-                updateOtherPlayersBoards(state);
+        socket.on('slotError', (msg) => {
+            showToast(msg, 'error');
+        });
+        socket.on('resetGame', () => {
+            resetGameState();
+            generateBoard();
+            startTimer();
+            showToast('تم إعادة تشغيل اللعبة', 'info');
+        });
+        socket.on('playerFinished', (data) => {
+            if (data.slot !== mySlot) {
+                showToast(`${data.avatar} ${data.playerName} أنهى اللعبة!`, 'success');
             }
+            checkForVictory();
         });
-        socket.on('allFinished', (finalState) => {
-            showVictoryScreen(finalState);
+        socket.on('kicked', (data) => {
+            showToast(data.message || 'تم طردك من قبل المسؤول', 'error');
+            setTimeout(() => location.reload(), 2000);
         });
-
-        // ===== Game Functions =====
+        socket.on('chatMessage', (data) => {
+            addChatMessage(data);
+        });
+        // ===== Screen Navigation =====
         function submitName() {
             const name = document.getElementById('playerName').value.trim();
-            if (!name || name.length < 2) return alert('الاسم غير صالح');
+            if (!name || name.length < 2) {
+                showToast('الرجاء إدخال اسم صحيح (حرفين على الأقل)', 'error');
+                return;
+            }
             playerName = name;
-            socket.emit('requestLock', { name, avatar: selectedAvatar, difficulty: selectedDifficulty });
+            localData.avatar = selectedAvatar;
+            localData.difficulty = selectedDifficulty;
             document.getElementById('displayName').textContent = name;
             document.getElementById('displayAvatarWaiting').textContent = selectedAvatar;
+            socket.emit('requestLock', { 
+                name: playerName, 
+                avatar: selectedAvatar,
+                difficulty: selectedDifficulty
+            });
             showScreen('waitingScreen');
+            showToast('جاري إرسال الطلب...', 'info');
         }
-
+        function submitLock() {
+            const lockInput = document.getElementById('lockInput').value.trim();
+            if (lockInput !== playerLock) {
+                showToast('الرمز غير صحيح! حاول مرة أخرى', 'error');
+                document.getElementById('lockInput').value = '';
+                return;
+            }
+            socket.emit('lockVerified', { 
+                name: playerName, 
+                lock: playerLock, 
+                avatar: selectedAvatar,
+                difficulty: selectedDifficulty
+            });
+            showScreen('slotScreen');
+            showToast('تم التحقق من الرمز بنجاح', 'success');
+        }
+        function joinGame() {
+            if (selectedSlot) {
+                socket.emit('requestSlot', { 
+                    slot: selectedSlot, 
+                    name: playerName,
+                    lock: playerLock,
+                    avatar: selectedAvatar,
+                    difficulty: selectedDifficulty
+                });
+            }
+        }
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+        function showGame() {
+            document.body.classList.remove('lobby-mode');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('myAvatarHeader').textContent = localData.avatar;
+            document.getElementById('myNameHeader').textContent = playerName;
+        }
+        // ===== UI Updates =====
+        function updateSlotsUI(state) {
+            const container = document.getElementById('slotsContainer');
+            container.innerHTML = '';
+            document.getElementById('onlineCount').textContent = state.onlineCount;
+            const takenSlots = Object.values(state.players).map(p => p.slot);
+            for (let i = 1; i <= 4; i++) {
+                const player = Object.values(state.players).find(p => p.slot === i);
+                const div = document.createElement('div');
+                const isTaken = takenSlots.includes(i);
+                div.className = `slot-card ${isTaken ? 'taken' : ''} ${selectedSlot === i ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="slot-emoji">${player ? player.avatar : playerEmojis[i-1]}</div>
+                    <div class="slot-status" style="font-size:18px; font-weight:bold; margin:8px 0;">${player ? player.name : playerNames[i-1]}</div>
+                    <div class="slot-name" style="font-size:16px;">${isTaken ? '🔒 محجوز' : '✅ متاح'}</div>
+                `;
+                if (!isTaken) {
+                    div.onclick = () => {
+                        selectedSlot = i;
+                        updateSlotsUI(state);
+                        document.getElementById('joinBtn').disabled = false;
+                    };
+                }
+                container.appendChild(div);
+            }
+        }
+        function updatePlayersList(state) {
+            const container = document.getElementById('playersList');
+            const players = Object.values(state.players).sort((a, b) => {
+                if (b.completed !== a.completed) return b.completed - a.completed;
+                return b.score - a.score;
+            });
+            container.innerHTML = '';
+            players.forEach((player, index) => {
+                const isMe = player.slot === mySlot;
+                const badge = getBadge(player.gamesPlayed || 0);
+                const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                const card = document.createElement('div');
+                card.className = `player-mini-card ${isMe ? 'me' : ''}`;
+                card.innerHTML = `
+                    <div class="player-mini-header">
+                        <div class="player-mini-info">
+                            <div class="player-mini-avatar">
+                                ${player.avatar || playerEmojis[player.slot-1]}
+                                <span class="player-badge">${badge.icon}</span>
+                            </div>
+                            <div class="player-mini-name">${player.name}</div>
+                        </div>
+                        <div class="player-rank">${rankEmoji}</div>
+                    </div>
+                    <div class="player-mini-stats">
+                        <span>⭐ ${player.score}</span>
+                        <span>${player.completed}/81</span>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill" style="width: ${Math.round(player.completed/81*100)}%"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        function updateMiniGrids(state) {
+            const container = document.getElementById('miniGridsContainer');
+            container.innerHTML = '';
+            Object.values(state.players).forEach(player => {
+                if (player.slot === mySlot) return;
+                const div = document.createElement('div');
+                div.className = 'mini-grid-container';
+                div.innerHTML = `
+                    <div class="mini-grid-header">
+                        <div class="mini-grid-player">
+                            <span>${player.avatar}</span>
+                            <span>${player.name}</span>
+                        </div>
+                        <div style="font-size: 11px; color: #6b7280;">${player.completed}/81</div>
+                    </div>
+                    <div class="mini-grid" id="miniGrid${player.slot}"></div>
+                `;
+                container.appendChild(div);
+                if (player.board) {
+                    renderMiniGrid(player.slot, player.board, player.solution);
+                }
+            });
+        }
+        function renderMiniGrid(slot, board, solution) {
+            const grid = document.getElementById(`miniGrid${slot}`);
+            if (!grid) return;
+            grid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'mini-cell';
+                    if (board[i][j] !== 0) {
+                        cell.textContent = board[i][j];
+                        if (solution && board[i][j] === solution[i][j]) {
+                            cell.classList.add('fixed');
+                        } else {
+                            cell.classList.add('filled');
+                        }
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        function getBadge(gamesPlayed) {
+            if (gamesPlayed >= 100) return BADGES.master;
+            if (gamesPlayed >= 50) return BADGES.expert;
+            if (gamesPlayed >= 10) return BADGES.intermediate;
+            return BADGES.beginner;
+        }
+        // ===== Sudoku Logic =====
+        function isValid(board, row, col, num) {
+            for (let x = 0; x < 9; x++) {
+                if (board[row][x] === num || board[x][col] === num) return false;
+            }
+            let sr = row - row % 3, sc = col - col % 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i+sr][j+sc] === num) return false;
+                }
+            }
+            return true;
+        }
+        function solve(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] === 0) {
+                        for (let n = 1; n <= 9; n++) {
+                            if (isValid(board, r, c, n)) {
+                                board[r][c] = n;
+                                if (solve(board)) return true;
+                                board[r][c] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
         function generateBoard() {
-            const emptyCount = DIFFICULTIES[selectedDifficulty].empty;
-            // ... (same logic as before but use emptyCount)
-            const board = Array(9).fill().map(() => Array(9).fill(0));
-            // Fill with some numbers then solve
+            const board = Array(9).fill(null).map(() => Array(9).fill(0));
             for (let i = 0; i < 15; i++) {
                 let num = (i % 9) + 1;
                 let tries = 0;
@@ -682,64 +1679,44 @@
             }
             solve(board);
             localData.solution = board.map(row => [...row]);
+            const emptyCells = DIFFICULTIES[localData.difficulty].empty;
             let removed = 0;
-            const positions = [];
-            for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) positions.push([i, j]);
-            shuffleArray(positions);
-            while (removed < emptyCount && positions.length) {
-                const [r, c] = positions.pop();
+            while (removed < emptyCells) {
+                let r = Math.floor(Math.random() * 9);
+                let c = Math.floor(Math.random() * 9);
                 if (board[r][c] !== 0) {
                     board[r][c] = 0;
                     removed++;
                 }
             }
             localData.board = board;
+            resetGameState();
+            socket.emit('sendBoard', {
+                board: localData.board,
+                solution: localData.solution,
+                difficulty: localData.difficulty
+            });
+            renderGrid();
+        }
+        function resetGameState() {
             localData.score = 0;
             localData.completed = 0;
             localData.finished = false;
-            mistakes = 0;
-            hintsUsed = 0;
-            moveHistory = [];
-            document.getElementById('mistakesCounter').textContent = `الأخطاء: ${mistakes}/3`;
-            socket.emit('sendBoard', { board: localData.board, solution: localData.solution });
-            renderGrid();
+            localData.mistakes = 0;
+            localData.hints = 3;
+            localData.history = [];
+            localData.notes = {};
+            localData.notesMode = false;
+            localData.eraserMode = false;
+            document.getElementById('mistakesCount').textContent = '0';
+            document.getElementById('hintsLeft').textContent = '3';
+            document.getElementById('undoBtn').disabled = true;
+            document.getElementById('notesBtn').classList.remove('active');
+            document.getElementById('eraserBtn').classList.remove('active');
         }
-
-        function isValid(board, row, col, num) {
-            for (let x = 0; x < 9; x++) {
-                if (board[row][x] === num || board[x][col] === num) return false;
-            }
-            let sr = row - row % 3, sc = col - col % 3;
-            for (let i = 0; i < 3; i++)
-                for (let j = 0; j < 3; j++)
-                    if (board[i+sr][j+sc] === num) return false;
-            return true;
-        }
-
-        function solve(board) {
-            for (let r = 0; r < 9; r++)
-                for (let c = 0; c < 9; c++)
-                    if (board[r][c] === 0) {
-                        for (let n = 1; n <= 9; n++)
-                            if (isValid(board, r, c, n)) {
-                                board[r][c] = n;
-                                if (solve(board)) return true;
-                                board[r][c] = 0;
-                            }
-                        return false;
-                    }
-            return true;
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
+        // ===== Grid Rendering =====
         function renderGrid() {
-            const grid = document.getElementById(`grid${mySlot}`);
+            const grid = document.getElementById('mainGrid');
             if (!grid) return;
             grid.innerHTML = '';
             for (let i = 0; i < 9; i++) {
@@ -748,101 +1725,371 @@
                     cell.className = 'cell';
                     cell.dataset.r = i;
                     cell.dataset.c = j;
+                    const key = `${i},${j}`;
+                    const isFixed = localData.solution[i][j] === localData.board[i][j] && localData.board[i][j] !== 0;
                     if (localData.board[i][j] !== 0) {
-                        cell.textContent = localData.board[i][j];
-                        if (localData.board[i][j] === localData.solution[i][j]) {
+                        if (isFixed) {
+                            cell.textContent = localData.board[i][j];
                             cell.classList.add('fixed');
+                        } else {
+                            cell.textContent = localData.board[i][j];
+                            if (localData.board[i][j] !== localData.solution[i][j]) {
+                                cell.classList.add('error-cell');
+                            }
                         }
+                    } else if (localData.notes[key] && localData.notes[key].length > 0) {
+                        const notesDiv = document.createElement('div');
+                        notesDiv.className = 'cell-notes';
+                        for (let n = 1; n <= 9; n++) {
+                            const noteCell = document.createElement('div');
+                            noteCell.className = 'cell-note';
+                            if (localData.notes[key].includes(n)) {
+                                noteCell.textContent = n;
+                            }
+                            notesDiv.appendChild(noteCell);
+                        }
+                        cell.appendChild(notesDiv);
                     }
                     cell.onclick = () => selectCell(i, j);
                     grid.appendChild(cell);
                 }
             }
+            highlightRelated();
         }
-
         function selectCell(r, c) {
-            if (localData.finished) return;
-            const grid = document.getElementById(`grid${mySlot}`);
+            const grid = document.getElementById('mainGrid');
+            if (!grid) return;
             grid.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
             const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
             if (!cell.classList.contains('fixed')) {
                 cell.classList.add('selected');
                 localData.selected = {r, c};
+                highlightRelated();
             }
         }
-
+        function highlightRelated() {
+            const grid = document.getElementById('mainGrid');
+            if (!grid) return;
+            grid.querySelectorAll('.cell').forEach(el => el.classList.remove('highlighted'));
+            if (localData.selected) {
+                const {r, c} = localData.selected;
+                const selectedValue = localData.board[r][c];
+                grid.querySelectorAll('.cell').forEach(el => {
+                    const cr = parseInt(el.dataset.r);
+                    const cc = parseInt(el.dataset.c);
+                    if (cr === r || cc === c || 
+                        (Math.floor(cr/3) === Math.floor(r/3) && Math.floor(cc/3) === Math.floor(c/3))) {
+                        el.classList.add('highlighted');
+                    }
+                    if (selectedValue !== 0 && localData.board[cr][cc] === selectedValue) {
+                        el.classList.add('highlighted');
+                    }
+                });
+            }
+        }
+        // ===== Game Actions =====
         function placeNum(num) {
             if (!localData.selected || localData.finished) return;
             const {r, c} = localData.selected;
-            const oldValue = localData.board[r][c];
-            moveHistory.push({r, c, oldValue});
-            localData.board[r][c] = num;
-            const correct = num === localData.solution[r][c];
-            if (!correct) {
-                mistakes++;
-                document.getElementById('mistakesCounter').textContent = `الأخطاء: ${mistakes}/3`;
-                if (mistakes >= 3) {
-                    alert('لقد ارتكبت 3 أخطاء! اللعبة انتهت.');
-                    localData.finished = true;
+            const key = `${r},${c}`;
+            if (localData.solution[r][c] === localData.board[r][c] && localData.board[r][c] !== 0) {
+                return;
+            }
+            if (localData.notesMode) {
+                if (!localData.notes[key]) localData.notes[key] = [];
+                const idx = localData.notes[key].indexOf(num);
+                if (idx === -1) {
+                    localData.notes[key].push(num);
+                } else {
+                    localData.notes[key].splice(idx, 1);
                 }
-            } else {
+                renderGrid();
+                return;
+            }
+            const oldValue = localData.board[r][c];
+            localData.history.push({r, c, value: oldValue, notes: localData.notes[key] ? [...localData.notes[key]] : []});
+            if (localData.history.length > 10) {
+                localData.history.shift();
+            }
+            document.getElementById('undoBtn').disabled = false;
+            localData.board[r][c] = num;
+            delete localData.notes[key];
+            const grid = document.getElementById('mainGrid');
+            const cell = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if (num === localData.solution[r][c]) {
                 localData.score += 10;
+                cell.classList.add('correct');
+                showToast('صحيح! +10 نقاط ✅', 'success');
+                setTimeout(() => cell.classList.remove('correct'), 600);
+            } else {
+                localData.mistakes++;
+                document.getElementById('mistakesCount').textContent = localData.mistakes;
+                if (localData.mistakes >= 3) {
+                    document.getElementById('mistakesCounter').classList.add('critical');
+                    showToast('لقد استنفذت كل الأخطاء! ❌', 'error');
+                    setTimeout(() => {
+                        alert('😞 للأسف! لقد خسرت اللعبة\nتم استنفاذ جميع المحاولات (3 أخطاء)');
+                        location.reload();
+                    }, 1000);
+                    return;
+                }
+                localData.score = Math.max(0, localData.score - 2);
+                cell.classList.add('wrong');
+                showToast('خطأ! -2 نقطة ❌', 'error');
+                setTimeout(() => cell.classList.remove('wrong'), 600);
             }
             renderGrid();
             selectCell(r, c);
             updateProgress();
         }
-
         function clearCell() {
             if (!localData.selected || localData.finished) return;
             const {r, c} = localData.selected;
-            if (localData.board[r][c] === localData.solution[r][c]) return;
-            placeNum(0);
-        }
-
-        function undoMove() {
-            if (moveHistory.length === 0 || localData.finished) return;
-            const last = moveHistory.pop();
-            localData.board[last.r][last.c] = last.oldValue;
+            const key = `${r},${c}`;
+            if (localData.solution[r][c] === localData.board[r][c] && localData.board[r][c] !== 0) {
+                return;
+            }
+            if (localData.eraserMode || localData.board[r][c] === 0) {
+                delete localData.notes[key];
+            }
+            const oldValue = localData.board[r][c];
+            localData.history.push({r, c, value: oldValue, notes: localData.notes[key] ? [...localData.notes[key]] : []});
+            localData.board[r][c] = 0;
             renderGrid();
-            updateProgress();
+            selectCell(r, c);
+            showToast('تم مسح الخلية', 'info');
+            document.getElementById('undoBtn').disabled = false;
         }
-
-        function useHint() {
-            if (hintsUsed >= 3 || !localData.selected || localData.finished) return;
-            const {r, c} = localData.selected;
-            if (localData.board[r][c] === 0) {
-                localData.board[r][c] = localData.solution[r][c];
-                hintsUsed++;
-                renderGrid();
-                updateProgress();
+        function undoMove() {
+            if (localData.history.length === 0) return;
+            const last = localData.history.pop();
+            const key = `${last.r},${last.c}`;
+            localData.board[last.r][last.c] = last.value;
+            if (last.notes && last.notes.length > 0) {
+                localData.notes[key] = [...last.notes];
+            }
+            renderGrid();
+            selectCell(last.r, last.c);
+            showToast('تم التراجع', 'info');
+            if (localData.history.length === 0) {
+                document.getElementById('undoBtn').disabled = true;
             }
         }
-
         function toggleNotes() {
-            notesMode = !notesMode;
-            showToast(notesMode ? 'وضع الملاحظات مفعل' : 'وضع الملاحظات معطل');
+            localData.notesMode = !localData.notesMode;
+            localData.eraserMode = false;
+            const btn = document.getElementById('notesBtn');
+            const eraserBtn = document.getElementById('eraserBtn');
+            if (localData.notesMode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+            eraserBtn.classList.remove('active');
         }
-
+        function toggleEraser() {
+            localData.eraserMode = !localData.eraserMode;
+            localData.notesMode = false;
+            const btn = document.getElementById('eraserBtn');
+            const notesBtn = document.getElementById('notesBtn');
+            if (localData.eraserMode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+            notesBtn.classList.remove('active');
+        }
+        function useHint() {
+            if (localData.hints <= 0 || !localData.selected || localData.finished) {
+                if (localData.hints <= 0) {
+                    showToast('لا توجد مساعدات متبقية!', 'error');
+                }
+                return;
+            }
+            const {r, c} = localData.selected;
+            if (localData.solution[r][c] === localData.board[r][c] && localData.board[r][c] !== 0) {
+                showToast('هذه الخلية صحيحة بالفعل!', 'info');
+                return;
+            }
+            localData.hints--;
+            document.getElementById('hintsLeft').textContent = localData.hints;
+            const correctNum = localData.solution[r][c];
+            localData.board[r][c] = correctNum;
+            renderGrid();
+            selectCell(r, c);
+            showToast(`💡 الإجابة الصحيحة: ${correctNum}`, 'info');
+            updateProgress();
+            if (localData.hints === 0) {
+                document.getElementById('hintBtn').disabled = true;
+            }
+        }
         function updateProgress() {
             let completed = 0;
-            for (let i = 0; i < 9; i++)
-                for (let j = 0; j < 9; j++)
-                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0)
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    if (localData.board[i][j] === localData.solution[i][j] && localData.board[i][j] !== 0) {
                         completed++;
+                    }
+                }
+            }
             localData.completed = completed;
+            document.getElementById('myScoreHeader').textContent = localData.score;
+            document.getElementById('myProgressHeader').textContent = `${completed}/81`;
             if (completed === 81 && !localData.finished) {
                 localData.finished = true;
-                socket.emit('playerFinished', { slot: mySlot, score: localData.score, completed });
+                localData.gamesPlayed++;
+                createConfetti();
+                showToast('🎉 مبروك! أنهيت اللعبة! 🏆', 'success');
+                setTimeout(() => {
+                    checkForVictory();
+                }, 1000);
             }
             socket.emit('updateProgress', {
                 score: localData.score,
                 completed: localData.completed,
                 finished: localData.finished,
-                board: localData.board
+                board: localData.board,
+                solution: localData.solution,
+                gamesPlayed: localData.gamesPlayed
             });
         }
-
+        // ===== Victory System =====
+        function checkForVictory() {
+            socket.emit('checkVictory');
+            socket.once('victoryData', (data) => {
+                if (data.allFinished) {
+                    showVictoryModal(data.players);
+                }
+            });
+        }
+        function showVictoryModal(players) {
+            const modal = document.getElementById('victoryModal');
+            const podium = document.getElementById('victoryPodium');
+            const stats = document.getElementById('victoryStats');
+            const sorted = players.sort((a, b) => {
+                if (b.completed !== a.completed) return b.completed - a.completed;
+                return b.score - a.score;
+            });
+            podium.innerHTML = '';
+            if (sorted.length >= 2) {
+                const second = document.createElement('div');
+                second.className = 'podium-place second';
+                second.innerHTML = `
+                    <div class="podium-medal">🥈</div>
+                    <div class="podium-avatar">${sorted[1].avatar}</div>
+                    <div class="podium-platform">
+                        <div class="podium-name">${sorted[1].name}</div>
+                        <div class="podium-score">⭐ ${sorted[1].score}</div>
+                    </div>
+                `;
+                podium.appendChild(second);
+            }
+            if (sorted.length >= 1) {
+                const first = document.createElement('div');
+                first.className = 'podium-place first';
+                first.innerHTML = `
+                    <div class="podium-medal">🥇</div>
+                    <div class="podium-avatar">${sorted[0].avatar}</div>
+                    <div class="podium-platform">
+                        <div class="podium-name">${sorted[0].name}</div>
+                        <div class="podium-score">⭐ ${sorted[0].score}</div>
+                    </div>
+                `;
+                podium.appendChild(first);
+            }
+            if (sorted.length >= 3) {
+                const third = document.createElement('div');
+                third.className = 'podium-place third';
+                third.innerHTML = `
+                    <div class="podium-medal">🥉</div>
+                    <div class="podium-avatar">${sorted[2].avatar}</div>
+                    <div class="podium-platform">
+                        <div class="podium-name">${sorted[2].name}</div>
+                        <div class="podium-score">⭐ ${sorted[2].score}</div>
+                    </div>
+                `;
+                podium.appendChild(third);
+            }
+            const myPlayer = sorted.find(p => p.slot === mySlot);
+            const myRank = sorted.indexOf(myPlayer) + 1;
+            stats.innerHTML = `
+                <div class="victory-stat-row">
+                    <span><strong>مركزك:</strong></span>
+                    <span>${myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🏅'} المركز ${myRank}</span>
+                </div>
+                <div class="victory-stat-row">
+                    <span><strong>نقاطك:</strong></span>
+                    <span>⭐ ${myPlayer.score}</span>
+                </div>
+                <div class="victory-stat-row">
+                    <span><strong>الإكمال:</strong></span>
+                    <span>${myPlayer.completed}/81 (${Math.round(myPlayer.completed/81*100)}%)</span>
+                </div>
+                <div class="victory-stat-row">
+                    <span><strong>المستوى:</strong></span>
+                    <span>${DIFFICULTIES[localData.difficulty].name}</span>
+                </div>
+            `;
+            modal.classList.add('show');
+            createConfetti();
+        }
+        function closeVictoryModal() {
+            document.getElementById('victoryModal').classList.remove('show');
+        }
+        function shareResults() {
+            const text = `🎮 سودوكو PRO
+${localData.avatar} ${playerName}
+⭐ النقاط: ${localData.score}
+📊 الإكمال: ${localData.completed}/81
+🎯 المستوى: ${DIFFICULTIES[localData.difficulty].name}
+#سودوكو #Sudoku`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'نتائج سودوكو PRO',
+                    text: text
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('تم نسخ النتائج!', 'success');
+                });
+            }
+        }
+        // ===== Chat System =====
+        function toggleChat() {
+            const chat = document.getElementById('chatContainer');
+            chat.classList.toggle('open');
+        }
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            socket.emit('chatMessage', {
+                message: message,
+                playerName: playerName,
+                avatar: localData.avatar,
+                slot: mySlot
+            });
+            input.value = '';
+        }
+        function addChatMessage(data) {
+            const container = document.getElementById('chatMessages');
+            const isMe = data.slot === mySlot;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${isMe ? 'me' : 'other'}`;
+            msgDiv.innerHTML = `
+                <div class="message-sender">
+                    <span class="sender-avatar">${data.avatar}</span>
+                    <span>${data.playerName}</span>
+                </div>
+                <div class="message-bubble">${data.message}</div>
+            `;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            if (!document.getElementById('chatContainer').classList.contains('open')) {
+                showToast(`رسالة جديدة من ${data.playerName}`, 'info');
+            }
+        }
+        // ===== Timer =====
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             startTime = Date.now();
@@ -853,65 +2100,51 @@
                 document.getElementById('timer').textContent = `${m}:${s}`;
             }, 1000);
         }
-
-        function showVictoryScreen(finalState) {
-            const players = Object.values(finalState.players).sort((a, b) => {
-                if (b.completed !== a.completed) return b.completed - a.completed;
-                return b.score - a.score;
-            });
-            const lb = document.getElementById('finalLeaderboard');
-            lb.innerHTML = '';
-            players.slice(0, 3).forEach((p, i) => {
-                const div = document.createElement('div');
-                div.className = `final-rank rank-${i+1}`;
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
-                div.innerHTML = `
-                    <div class="final-avatar">${p.avatar}</div>
-                    <div class="final-name">${medal} ${p.name}</div>
-                    <div class="final-stats">⭐ ${p.score}</div>
-                `;
-                lb.appendChild(div);
-            });
-            document.getElementById('victoryScreen').style.display = 'flex';
-        }
-
-        function shareResult() {
-            const msg = 'لقد لعبت سودوكو متعدد اللاعبين وحصلت على مركز مشرف! جربها أنت أيضاً 🎮';
-            if (navigator.share) {
-                navigator.share({ title: 'سودوكو PRO', text: msg });
-            } else {
-                navigator.clipboard.writeText(msg).then(() => alert('تم نسخ الرابط!'));
+        // ===== Keyboard Support =====
+        document.addEventListener('keydown', (e) => {
+            if (!localData.selected || localData.finished) return;
+            if (e.key >= '1' && e.key <= '9') {
+                placeNum(parseInt(e.key));
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                clearCell();
+            } else if (e.key === 'z' && e.ctrlKey) {
+                undoMove();
             }
-        }
+        });
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
+        // Prevent default behavior for arrow keys and number keys during gameplay
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('gameScreen').classList.contains('active')) {
+                if (
+                    (e.key >= '1' && e.key <= '9') ||
+                    e.key === 'Backspace' ||
+                    e.key === 'Delete' ||
+                    e.key === 'ArrowUp' ||
+                    e.key === 'ArrowDown' ||
+                    e.key === 'ArrowLeft' ||
+                    e.key === 'ArrowRight'
+                ) {
+                    e.preventDefault();
+                }
+            }
+        });
 
-        // UI Helpers
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-        function showGame() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('gameScreen').classList.add('active');
-            document.getElementById('myInfo').innerHTML = `
-                <span style="font-size:20px;">${localData.avatar}</span>
-                <span style="margin-right:10px;">${playerName}</span>
-            `;
-        }
-
-        // Number pad
-        window.placeNum = placeNum;
-        window.clearCell = clearCell;
-
-        // Enter key support
-        document.getElementById('playerName').addEventListener('keypress', e => { if (e.key === 'Enter') submitName(); });
-        document.getElementById('lockInput').addEventListener('keypress', e => { if (e.key === 'Enter') submitLock(); });
+        // Arrow key navigation
+        document.addEventListener('keydown', (e) => {
+            if (!localData.selected || localData.finished || !document.getElementById('gameScreen').classList.contains('active')) return;
+            const { r, c } = localData.selected;
+            let newR = r, newC = c;
+            switch (e.key) {
+                case 'ArrowUp': newR = Math.max(0, r - 1); break;
+                case 'ArrowDown': newR = Math.min(8, r + 1); break;
+                case 'ArrowLeft': newC = Math.max(0, c - 1); break;
+                case 'ArrowRight': newC = Math.min(8, c + 1); break;
+                default: return;
+            }
+            if (newR !== r || newC !== c) {
+                selectCell(newR, newC);
+            }
+        });
     </script>
 </body>
 </html>
